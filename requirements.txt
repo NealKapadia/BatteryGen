@@ -1,0 +1,30 @@
+# Core (already present in your environment — listed for reproducibility).
+# Install torch from the CUDA 12.4 index if you ever recreate the env:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu124
+torch>=2.6
+rdkit>=2024.3
+selfies>=2.1
+numpy>=1.26
+tqdm>=4.66
+
+# Optional: natural-language -> property-spec parsing via Azure AI Foundry / OpenAI.
+# The pipeline runs fine without these (keyword fallback is used instead).
+openai>=1.40
+python-dotenv>=1.0
+
+# Reporting + benchmarking (report.py latent PCA / charts).
+matplotlib>=3.8
+scikit-learn>=1.3
+
+# QM9 DFT grounding (qm9.py). Already present as torch_geometric in your env.
+torch-geometric>=2.5
+
+# Local designer (app.py) uses only the stdlib + 3Dmol.js CDN. The PRODUCTION
+# server (server.py) + Docker image use FastAPI/Uvicorn:
+fastapi>=0.110
+uvicorn[standard]>=0.29
+
+# Optional: HuggingFace PubChem-124M streaming (hf_data.py). Install when needed.
+# datasets>=2.19
+
+# xTB is an external binary (already at config.XTB_EXE), not a pip package.

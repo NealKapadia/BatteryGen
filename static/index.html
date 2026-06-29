@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>molvae — generative inverse design</title>
+<script src="https://3Dmol.org/build/3Dmol-min.js"></script>
+<style>
+  :root{--bg:#0d1117;--card:#161b22;--bd:#30363d;--fg:#e6edf3;--mut:#9da7b3;--acc:#4c9aff;--good:#3fb950;}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--fg);
+    font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif}
+  header{padding:20px 24px;border-bottom:1px solid var(--bd)}
+  h1{margin:0;font-size:20px} .sub{color:var(--mut);font-size:13px;margin-top:4px}
+  main{max-width:1100px;margin:0 auto;padding:20px 24px}
+  .panel{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:16px}
+  label{display:block;font-size:13px;color:var(--mut);margin:8px 0 4px}
+  textarea,input[type=text],input[type=number]{width:100%;background:#0d1117;color:var(--fg);
+    border:1px solid var(--bd);border-radius:8px;padding:9px 11px;font:inherit}
+  textarea{resize:vertical;min-height:54px}
+  button{background:var(--acc);color:#06122b;border:0;border-radius:8px;padding:9px 16px;
+    font-weight:600;cursor:pointer} button.ghost{background:#21262d;color:var(--fg);border:1px solid var(--bd)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  .chip{background:#21262d;border:1px solid var(--bd);border-radius:999px;padding:5px 12px;
+    font-size:12.5px;cursor:pointer;color:var(--fg)} .chip:hover{border-color:var(--acc)}
+  details summary{cursor:pointer;color:var(--acc);font-size:14px;font-weight:600}
+  .status{font-size:13px;color:var(--mut);margin-top:8px} .ok{color:var(--good)} .err{color:#f85149}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+  .mol{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px}
+  .mol h3{margin:0 0 2px;font-size:15px} .smiles{font-family:ui-monospace,monospace;font-size:12.5px;
+    color:var(--acc);word-break:break-all} .feat{font-size:12.5px;color:var(--mut);margin-top:6px}
+  .badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:6px;margin-left:6px}
+  .b-mol{background:#193a2a;color:var(--good)} .b-new{background:#1d2b4a;color:var(--acc)}
+  .viewer{width:100%;height:220px;position:relative;margin-top:8px;border-radius:8px;background:#000}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid #555;border-top-color:var(--acc);
+    border-radius:50%;animation:s .8s linear infinite;vertical-align:middle}@keyframes s{to{transform:rotate(360deg)}}
+  .muted{color:var(--mut);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>molvae — generative inverse design</h1>
+  <div class="sub">Describe what you want, optionally upload your own data + an objective, and the
+    model invents candidate molecules. <span id="dev"></span></div>
+</header>
+<main>
+  <div class="panel">
+    <label>What do you want to design?</label>
+    <textarea id="prompt" placeholder="e.g. a small, water-stable additive for an aqueous zinc battery"></textarea>
+    <div class="chips" id="chips"></div>
+    <div class="row" style="margin-top:10px">
+      <div><label>How many molecules</label><input type="number" id="n" value="12" min="1" max="30" style="width:90px"></div>
+      <button id="gen">Generate</button>
+      <span id="genStatus" class="status"></span>
+    </div>
+    <div id="objBanner" class="status"></div>
+  </div>
+
+  <details class="panel">
+    <summary>Use your own data &nbsp;·&nbsp; train a model on a CSV and optimize toward your goal</summary>
+    <label>Dataset (CSV with a SMILES column + property columns)</label>
+    <input type="file" id="csv" accept=".csv">
+    <label>Objective (plain English — which columns to optimize and which way)</label>
+    <input type="text" id="objective" placeholder="e.g. increase coulombic efficiency while reducing overpotential">
+    <div class="row" style="margin-top:10px">
+      <button id="train" class="ghost">Train predictor</button>
+      <span id="trainStatus" class="status"></span>
+    </div>
+    <div class="muted" style="margin-top:8px">Your file is processed in memory and never stored. After training,
+      Generate is biased toward your objective.</div>
+  </details>
+
+  <details class="panel">
+    <summary>Add literature &nbsp;·&nbsp; ground explanations &amp; novelty in papers you provide</summary>
+    <label>Paste paper text / abstract / notes</label>
+    <textarea id="litText" placeholder="Paste an abstract or notes about effective additives..."></textarea>
+    <label>Source / citation</label>
+    <input type="text" id="litSrc" placeholder="e.g. Zhang et al. 2024, JACS">
+    <div class="row" style="margin-top:10px">
+      <button id="addLit" class="ghost">Add to knowledge base</button>
+      <span id="litStatus" class="status"></span>
+    </div>
+  </details>
+
+  <div id="results" class="grid"></div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+let SESSION=null;
+const PROMPTS=[
+  "small water-stable additive for an aqueous zinc battery",
+  "non-flammable carbonate-like solvent with high oxidative stability",
+  "fluorinated additive that forms a stable SEI on a lithium anode",
+  "polar molecule that strongly coordinates Zn2+ and displaces water",
+  "low-viscosity ether solvent for fast ion transport",
+];
+$("chips").innerHTML = PROMPTS.map(p=>`<span class="chip">${p}</span>`).join("");
+document.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{$("prompt").value=c.textContent});
+
+fetch("/health").then(r=>r.json()).then(h=>{
+  $("dev").textContent = `Running on ${h.device}.` + (h.device==="cpu"?" Generation takes ~30-60 s on CPU.":"");
+}).catch(()=>{});
+
+function feats(f){ if(!f) return ""; return [
+  `${f.formula}`,`MW ${f.MolWt}`,`logP ${f.MolLogP}`,`TPSA ${f.TPSA}`,
+  `HBD ${f.HBD}`,`HBA ${f.HBA}`,`rot ${f.RotBonds}`,`rings ${f.Rings}`,`QED ${f.QED}`
+].join(" · "); }
+
+function render(mols){
+  $("results").innerHTML = mols.map((m,i)=>{
+    const pred = Object.entries(m.predictions||{}).map(([k,v])=>`${k}: <b>${v}</b>`).join(" · ");
+    const badge = m.molport_id ? `<span class="badge b-mol">in Molport</span>`
+                               : `<span class="badge b-new">novel</span>`;
+    return `<div class="mol">
+      <h3>#${m.rank} <span id="name${i}">${m.iupac||""}</span> ${badge}</h3>
+      <div class="smiles">${m.smiles}</div>
+      ${pred?`<div class="feat">${pred}${m.objective_score?` · score ${m.objective_score} ± ${m.uncertainty??0}`:""}</div>`:""}
+      <div class="feat">${feats(m.features)}</div>
+      <div id="slot${i}">
+        <button class="ghost view" data-i="${i}" data-s="${m.smiles}" style="margin-top:8px;font-size:12px;padding:6px 10px">Name &amp; 3D structure</button>
+      </div>
+    </div>`;
+  }).join("");
+  // IUPAC name + 3D are fetched on demand (one LLM/3D call per click) — keeps bulk generation fast
+  document.querySelectorAll(".view").forEach(b=>b.onclick=async()=>{
+    b.disabled=true;b.innerHTML='<span class="spin"></span> naming &amp; building 3D…';
+    try{
+      const r=await(await fetch("/molecule",{method:"POST",headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({smiles:b.dataset.s})})).json();
+      const i=b.dataset.i, slot=$("slot"+i);
+      if(r.iupac) $("name"+i).textContent = r.iupac;
+      if(r.molblock){ slot.innerHTML=`<div class="viewer" id="v${i}"></div>`; show3d("v"+i, r.molblock); }
+      else { b.textContent="3D unavailable"; }
+    }catch(e){ b.textContent="failed"; }
+  });
+}
+function show3d(id, molblock){
+  const el=$(id); el.innerHTML="";
+  const v=$3Dmol.createViewer(el,{backgroundColor:"black"});
+  v.addModel(molblock,"sdf"); v.setStyle({},{stick:{radius:0.15},sphere:{scale:0.28}});
+  v.zoomTo(); v.render();
+}
+
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+$("gen").onclick=async()=>{
+  $("gen").disabled=true;
+  const mode = SESSION ? "Bayesian optimization" : "sampling";
+  $("genStatus").innerHTML=`<span class="spin"></span> ${mode}… (up to ~2 min on CPU)`;
+  try{
+    const start=await(await fetch("/generate",{method:"POST",headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({prompt:$("prompt").value,n:+$("n").value,session_id:SESSION})})).json();
+    if(!start.ok){$("genStatus").innerHTML=`<span class="err">${start.error||"failed"}</span>`;return;}
+    let r=null, t0=Date.now();
+    while(true){
+      await sleep(2500);
+      const j=await(await fetch("/job/"+start.job_id)).json();
+      const secs=Math.round((Date.now()-t0)/1000);
+      if(j.status==="done"||j.status==="error"){ r=j.result; break; }
+      $("genStatus").innerHTML=`<span class="spin"></span> ${mode}… ${secs}s`;
+    }
+    if(!r||!r.ok){$("genStatus").innerHTML=`<span class="err">${(r&&r.error)||"failed"}</span>`;return;}
+    const tag = r.method==="bayesopt" ? " (Bayesian optimization)" : "";
+    $("genStatus").innerHTML=`<span class="ok">${r.n} molecules${tag}</span>`;
+    $("objBanner").innerHTML = r.objective?`Optimizing for: <b>${r.objective}</b> — score = uncertainty-aware predicted objective`:"";
+    render(r.molecules);
+  }catch(e){$("genStatus").innerHTML=`<span class="err">${e}</span>`;}
+  finally{$("gen").disabled=false;}
+};
+
+$("train").onclick=async()=>{
+  const f=$("csv").files[0], obj=$("objective").value.trim();
+  if(!f||!obj){$("trainStatus").innerHTML='<span class="err">choose a CSV and write an objective</span>';return;}
+  $("train").disabled=true; $("trainStatus").innerHTML='<span class="spin"></span> training…';
+  const fd=new FormData(); fd.append("file",f); fd.append("objective",obj);
+  try{
+    const r=await(await fetch("/train",{method:"POST",body:fd})).json();
+    if(!r.ok){$("trainStatus").innerHTML=`<span class="err">${r.error}</span>`;return;}
+    SESSION=r.session_id;
+    const mtxt=Object.entries(r.metrics).map(([c,m])=>`${c} (${m.direction}, R²=${m.cv_r2})`).join("; ");
+    $("trainStatus").innerHTML=`<span class="ok">trained on ${r.n_rows} rows → ${mtxt}. Generate now uses your objective.</span>`;
+  }catch(e){$("trainStatus").innerHTML=`<span class="err">${e}</span>`;}
+  finally{$("train").disabled=false;}
+};
+
+$("addLit").onclick=async()=>{
+  const t=$("litText").value.trim(); if(!t){return;}
+  $("addLit").disabled=true; $("litStatus").innerHTML='<span class="spin"></span> embedding…';
+  try{
+    const r=await(await fetch("/literature",{method:"POST",headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text:t,source:$("litSrc").value||"user"})})).json();
+    const l=await(await fetch("/literature")).json();
+    $("litStatus").innerHTML = r.ok
+      ? `<span class="ok">added (${l.documents}/${l.max_documents} documents in KB)</span>`
+      : `<span class="err">limit reached (${l.documents}/${l.max_documents})</span>`;
+  }catch(e){$("litStatus").innerHTML=`<span class="err">${e}</span>`;}
+  finally{$("addLit").disabled=false;}
+};
+</script>
+</body>
+</html>

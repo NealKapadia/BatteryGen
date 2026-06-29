@@ -1,0 +1,7 @@
+# Minimal deps to run the MolForge generative model locally (molforge.py).
+# Install:  pip install -r requirements-lib.txt
+# (CPU torch by default; for CUDA install torch from https://pytorch.org first.)
+torch>=2.2
+rdkit>=2023.9
+selfies>=2.1
+numpy>=1.24

@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "molforge"
+version = "0.1.0"
+description = "Pretrained conditional SELFIES-VAE for de-novo molecule & battery-electrolyte design"
+readme = "LIBRARY.md"
+requires-python = ">=3.10"
+authors = [{ name = "MolForge" }]
+keywords = ["cheminformatics", "vae", "selfies", "molecule-generation", "electrolyte", "rdkit"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Operating System :: OS Independent",
+]
+# Minimal deps to load the model and generate/encode/decode/score molecules.
+# NOTE: install a CUDA build of torch from https://pytorch.org first if you want GPU.
+dependencies = [
+    "torch>=2.2",
+    "rdkit>=2023.9",
+    "selfies>=2.1",
+    "numpy>=1.24",
+]
+# TODO: add a license before publishing publicly, e.g.
+#   license = { text = "MIT" }   (and add a matching LICENSE file)
+
+[project.optional-dependencies]
+# Local REST API / web app (server.py, webengine.py)
+app = ["fastapi", "uvicorn[standard]", "python-multipart", "pandas", "scikit-learn", "joblib"]
+# Natural-language request parsing + explanations (llm.py, needs Azure keys in .env)
+llm = ["openai", "python-dotenv"]
+# CE predictor + tuning (ce_*.py)
+ce = ["pandas", "scikit-learn", "xgboost", "optuna", "joblib"]
+full = [
+    "fastapi", "uvicorn[standard]", "python-multipart", "pandas", "scikit-learn",
+    "joblib", "openai", "python-dotenv", "xgboost", "optuna", "matplotlib", "tqdm",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-username/molforge"
+
+[project.scripts]
+molforge = "molforge.molforge:_main"
+
+# Map the importable package name `molforge` onto this flat directory, so every
+# .py module here is shipped as a `molforge.*` submodule (no file moves needed).
+[tool.setuptools]
+packages = ["molforge"]
+
+[tool.setuptools.package-dir]
+molforge = "."
+
+# Don't sweep the model weights, raw data, web assets, or local caches into the wheel.
+[tool.setuptools.exclude-package-data]
+"*" = ["*.pt", "*.pth", "*.pkl", "*.npy", "*.bloom", "*.sqlite", "*.csv", "*.env", ".env"]

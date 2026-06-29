@@ -1,0 +1,45 @@
+# Production stack: the molvae GPU app behind Caddy (automatic Let's Encrypt HTTPS).
+# 1) put your trained artifacts in ./artifacts  (vocab.json, descriptor_stats.json,
+#    meta.json, checkpoints/, membership/, electrolyte_model.pt)
+# 2) set your domain in Caddyfile and your keys in .env
+# 3) docker compose up -d --build
+services:
+  molvae:
+    build: .
+    image: molvae:latest
+    environment:
+      MOLVAE_DEVICE: cuda          # set to cpu if no GPU
+      MOLVAE_ART_DIR: /artifacts
+      MOLVAE_CKPT: /artifacts/checkpoints/best.pt
+      FOUNDRY_API_KEY: ${FOUNDRY_API_KEY}
+      FOUNDRY_ENDPOINT: ${FOUNDRY_ENDPOINT}
+      AZURE_OPENAI_KEY: ${AZURE_OPENAI_KEY}
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT}
+    volumes:
+      - ./artifacts:/artifacts:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    expose:
+      - "8000"
+
+  caddy:
+    image: caddy:2
+    depends_on: [molvae]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

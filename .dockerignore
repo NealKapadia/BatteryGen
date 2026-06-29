@@ -1,0 +1,10 @@
+# keep the image lean — artifacts are mounted at /artifacts, raw data never shipped
+__pycache__/
+*.pyc
+.env
+../molvae_artifacts/
+../*.sdf
+../*.sdf.gz
+../*.csv
+../SMILES/
+*.log

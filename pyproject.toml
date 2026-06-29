@@ -40,7 +40,7 @@ full = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-username/molforge"
+Homepage = "https://github.com/NealKapadia/molforge"
 
 [project.scripts]
 molforge = "molforge.molforge:_main"

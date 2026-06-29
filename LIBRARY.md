@@ -47,6 +47,32 @@ python molforge.py --n 10 --spec '{"MolWt":250,"NumAromaticRings":1}'
 python molforge.py --n 10 --device cuda --out molecules.csv
 ```
 
+## Fine-tune it on your own molecules
+
+`finetune.py` adapts the pretrained model to your own chemistry. It builds its training
+set **directly from a SMILES file you supply** — it does *not* need the original ~6M Molport
+token shards, so it runs from this `pip install` + the Hugging Face artifacts alone (CPU or GPU):
+
+```bash
+# MOLVAE_ART_DIR must point at a WRITABLE copy of the downloaded artifacts
+python -m molforge.finetune --input my_molecules.smi --epochs 3 --device cuda
+python -m molforge.finetune --input solvents.csv --smiles-col 0 --header --delim ,   # CSV
+```
+
+It writes `<artifacts>/checkpoints/finetuned.pt` (compatible with `MolForge`):
+
+```python
+from molforge import MolForge
+mf = MolForge(device="cpu", ckpt="/path/to/artifacts/checkpoints/finetuned.pt")
+mf.generate(20)
+```
+
+- **Runs on any laptop.** CPU is fine for a few thousand molecules / a few epochs (just slow);
+  pass `--device cuda` if you have an NVIDIA GPU. It's a 42M-param model, so a GPU is faster.
+- Molecules are filtered by the same rules as the base model (3–60 heavy atoms, organic
+  elements, SELFIES length cap); the run prints how many survived.
+- Descriptor normalization is reused from the base model so conditioning stays calibrated.
+
 ## Want a local REST API instead of importing?
 
 The same engine powers a FastAPI server you can run on your own machine:

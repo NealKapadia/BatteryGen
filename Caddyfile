@@ -1,8 +1,0 @@
-# Replace electrolyte.example.com with YOUR domain. Caddy auto-provisions a free
-# Let's Encrypt TLS certificate and renews it. That's the whole HTTPS setup.
-electrolyte.example.com {
-    reverse_proxy molvae:8000
-    encode gzip
-    # optional: basic gate so it isn't fully public
-    # basic_auth { admin JDJhJDE0... }   # caddy hash-password
-}

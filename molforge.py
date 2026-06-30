@@ -60,7 +60,6 @@ class MolForge:
                  with_properties: bool = False, max_tries: int = 8) -> List:
         """Return n unique valid SMILES. If `spec` is given (e.g. {"MolWt":250}), generation
         is conditioned toward it. with_properties=True returns [{smiles, ...descriptors}]."""
-        import ce_model  # reuse the validity-filtered generator + condition vector
         cond_spec = spec or {}
         cond = torch.from_numpy(self._data.spec_to_condition(cond_spec)).float()
         out, tries = [], 0

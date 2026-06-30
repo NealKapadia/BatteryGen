@@ -6,8 +6,9 @@ build-backend = "setuptools.build_meta"
 name = "molforge"
 version = "0.1.0"
 description = "Pretrained conditional SELFIES-VAE for de-novo molecule & battery-electrolyte design"
-readme = "LIBRARY.md"
+readme = "README.md"
 requires-python = ">=3.10"
+license = { text = "CC-BY-NC-4.0" }
 authors = [{ name = "MolForge" }]
 keywords = ["cheminformatics", "vae", "selfies", "molecule-generation", "electrolyte", "rdkit"]
 classifiers = [
@@ -16,27 +17,35 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Chemistry",
     "Operating System :: OS Independent",
 ]
-# Minimal deps to load the model and generate/encode/decode/score molecules.
+# Core deps: load the model, generate/encode/decode/score, fine-tune, download weights.
 # NOTE: install a CUDA build of torch from https://pytorch.org first if you want GPU.
 dependencies = [
     "torch>=2.2",
     "rdkit>=2023.9",
     "selfies>=2.1",
     "numpy>=1.24",
+    "huggingface_hub>=0.20",
 ]
-# TODO: add a license before publishing publicly, e.g.
-#   license = { text = "MIT" }   (and add a matching LICENSE file)
+# See LICENSE (code) and the Hugging Face model card (weights: CC BY-NC 4.0).
 
 [project.optional-dependencies]
+# Training / preprocessing / evaluation progress bars (train.py, preprocess.py, evaluate.py)
+train = ["tqdm"]
+# CE inverse-design predictor + tuning (ce_*.py)
+ce = ["pandas", "scikit-learn", "xgboost", "optuna", "joblib", "tqdm"]
 # Local REST API / web app (server.py, webengine.py)
 app = ["fastapi", "uvicorn[standard]", "python-multipart", "pandas", "scikit-learn", "joblib"]
 # Natural-language request parsing + explanations (llm.py, needs Azure keys in .env)
 llm = ["openai", "python-dotenv"]
-# CE predictor + tuning (ce_*.py)
-ce = ["pandas", "scikit-learn", "xgboost", "optuna", "joblib"]
+# DFT grounding (qm9.py via PyTorch Geometric) + xTB-label fine-tuning
+dft = ["torch-geometric", "tqdm"]
+# HTML reports / charts (report.py)
+report = ["matplotlib", "scikit-learn"]
+# Everything above, in one install.
 full = [
-    "fastapi", "uvicorn[standard]", "python-multipart", "pandas", "scikit-learn",
-    "joblib", "openai", "python-dotenv", "xgboost", "optuna", "matplotlib", "tqdm",
+    "tqdm", "pandas", "scikit-learn", "joblib", "xgboost", "optuna",
+    "fastapi", "uvicorn[standard]", "python-multipart",
+    "openai", "python-dotenv", "torch-geometric", "matplotlib",
 ]
 
 [project.urls]

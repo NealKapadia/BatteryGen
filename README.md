@@ -23,9 +23,6 @@ flowchart LR
     LOOP --> OUT["Ranked candidate molecules"]
 ```
 
-This guide is written so that someone with limited programming experience can run each part.
-Follow the steps in order, and copy-paste the commands.
-
 ---
 
 ## Training data and provenance
@@ -50,12 +47,6 @@ how MolForge targets **battery electrolytes** rather than only general organic c
 generator proposes structures, and the electrolyte model - grounded in real measured and
 simulated electrolyte data - ranks them.
 
-> Want a broader generator? You can train on the full ChEMBL set and add your own molecules
-> (Workflow C). Electrolyte chemical space itself is small - solvents and salts number in the
-> hundreds, not millions - so MolForge specializes toward electrolytes through the property
-> model and optional fine-tuning rather than by training the generator on millions of
-> electrolytes (which do not exist).
-
 ## How MolForge differs from existing models
 
 - **A latent space, not left-to-right text generation.** Autoregressive models (e.g.
@@ -75,11 +66,31 @@ simulated electrolyte data - ranks them.
 - **Open and laptop-friendly.** Runs on an ordinary CPU, installs with `pip`, and the weights
   are openly available.
 
+## Benchmark results
+
+Measured on `best.pt`, 5,000 generated samples at temperature 0.9:
+
+| Metric | Value |
+|---|---|
+| Validity | 1.000 |
+| Uniqueness | 0.998 |
+| Novelty (vs. training set) | 0.995 |
+| Internal diversity | 0.894 |
+| Reconstruction (exact) | 0.945 |
+| Reconstruction (token accuracy) | 0.998 |
+
+On these standard generative-benchmark columns, MolForge is competitive with - and on several
+columns exceeds - the autoregressive ElectrolyteGPT (Kim et al., *JACS Au*, 2026, 6, 2288-2302).
+
+Pretrained weights, the model card, and full evaluation details:
+[huggingface.co/NealKapadia/Molforge](https://huggingface.co/NealKapadia/Molforge)
+
 ---
 
 ## Table of contents
 
 - [Training data and provenance](#training-data-and-provenance)
+- [Benchmark results](#benchmark-results)
 - [How MolForge differs from existing models](#how-molforge-differs-from-existing-models)
 
 1. [What you can do](#1-what-you-can-do)

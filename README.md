@@ -5,15 +5,17 @@ electrolyte additives**. It pairs a pretrained generative model (it dreams up no
 molecules) with a predictive model (it estimates how well a molecule will perform) and ties
 them together into an automated inverse-design loop.
 
-Under the hood the generator is a *conditional variational autoencoder* trained on roughly
-six million purchasable molecules from the Molport catalog, using
+Under the hood the generator is a *conditional variational autoencoder* trained on
+**7,116,053 molecules curated from five public chemistry databases** (Molport, ChEMBL, and
+ZINC for broad chemical coverage, plus electrolyte data from OEDB and CALiSol-23), using
 [SELFIES](https://github.com/aspuru-guzik-group/selfies) so that **almost every structure it
 produces is chemically valid**. It learns a smooth map of chemical space that you can sample,
-search, and steer toward properties you care about.
+search, and steer toward properties you care about — and a paired electrolyte property model
+ranks candidates by predicted battery-relevant performance.
 
 ```mermaid
 flowchart LR
-    SMILES["Your molecules / Molport catalog"] --> GEN["Generative model (SELFIES-VAE)"]
+    SMILES["5 databases: Molport, ChEMBL, ZINC, OEDB, CALiSol-23"] --> GEN["Generative model (SELFIES-VAE)"]
     DATASET["Labeled performance dataset (CSV)"] --> PRED["Predictive model (ExtraTrees + XGBoost)"]
     GEN --> LOOP["Inverse-design loop"]
     PRED --> LOOP
@@ -26,7 +28,59 @@ Follow the steps in order, and copy-paste the commands.
 
 ---
 
+## Training data and provenance
+
+MolForge was **not** trained on a single source. The generator was trained on **7,116,053
+molecules** drawn from five public databases, filtered (3-60 heavy atoms, organic elements)
+and de-duplicated:
+
+| Database | Molecules used | Role |
+|---|---|---|
+| Molport "All Stock" | 6,088,143 | core corpus of purchasable molecules |
+| ChEMBL-37 | 800,000 | bioactive chemical diversity |
+| ZINC | 227,902 | additional lead-like diversity |
+| OEDB + CALiSol-23 | electrolyte data | see below |
+| **Total (generator)** | **7,116,053** | |
+
+OEDB and CALiSol-23 are *electrolyte* datasets: beyond a handful of solvent molecules, they
+contribute **18,918 electrolyte formulations** (ionic conductivity, ion coordination,
+viscosity) used to train the separate **electrolyte property model**, which scores generated
+molecules for battery-relevant performance across cations (Li / Na / K / Mg / Zn / ...). This is
+how MolForge targets **battery electrolytes** rather than only general organic chemistry: the
+generator proposes structures, and the electrolyte model - grounded in real measured and
+simulated electrolyte data - ranks them.
+
+> Want a broader generator? You can train on the full ChEMBL set and add your own molecules
+> (Workflow C). Electrolyte chemical space itself is small - solvents and salts number in the
+> hundreds, not millions - so MolForge specializes toward electrolytes through the property
+> model and optional fine-tuning rather than by training the generator on millions of
+> electrolytes (which do not exist).
+
+## How MolForge differs from existing models
+
+- **A latent space, not left-to-right text generation.** Autoregressive models (e.g.
+  ElectrolyteGPT, MolGPT) emit one token at a time. MolForge's VAE gives a continuous latent
+  space you can **interpolate** and **optimize with gradients** - for example "increase
+  molecular weight by 10 while keeping everything else," which a token model cannot do.
+- **Validity by construction.** Because it decodes SELFIES, essentially **100%** of generated
+  strings are valid molecules (measured validity 1.000), versus SMILES-based models that
+  routinely emit invalid strings.
+- **A complete inverse-design system, not just a generator.** MolForge pairs the generator with
+  a **predictive model** (with Optuna tuning), an **electrolyte property model**, optional
+  **LLM** guidance, and a **literature-grounded** retrieval step - an end-to-end loop from a
+  plain-English request to a ranked, scored candidate list.
+- **Electrolyte-formulation awareness.** Conductivity, coordination, and viscosity are *system*
+  properties; MolForge models them at the formulation level (multi-cation), grounded in OEDB
+  and CALiSol-23 data - most molecule generators ignore this entirely.
+- **Open and laptop-friendly.** Runs on an ordinary CPU, installs with `pip`, and the weights
+  are openly available.
+
+---
+
 ## Table of contents
+
+- [Training data and provenance](#training-data-and-provenance)
+- [How MolForge differs from existing models](#how-molforge-differs-from-existing-models)
 
 1. [What you can do](#1-what-you-can-do)
 2. [What you need](#2-what-you-need)

@@ -16,8 +16,8 @@ from pathlib import Path
 # Paths
 # --------------------------------------------------------------------------- #
 # Dataset root = the folder that contains SMILES/ and the *.sdf.gz chunks.
-# config.py lives in <DATA_DIR>/molvae/, so DATA_DIR is two parents up.
-DATA_DIR = Path(os.getenv("MOLVAE_DATA_DIR", str(Path(__file__).resolve().parent.parent)))
+# config.py lives in <DATA_DIR>/molvae/core/, so DATA_DIR is three parents up.
+DATA_DIR = Path(os.getenv("MOLVAE_DATA_DIR", str(Path(__file__).resolve().parents[2])))
 SMILES_DIR = DATA_DIR / "SMILES"
 SMILES_GLOB = "iis_smiles-*.txt.gz"
 

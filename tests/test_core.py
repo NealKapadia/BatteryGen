@@ -24,8 +24,33 @@ ROOT = Path(__file__).resolve().parent.parent
 # Lightweight tests (no weights needed)
 # --------------------------------------------------------------------------- #
 def test_modules_import():
-    import config, data, model, infer, finetune, molforge  # noqa: F401
+    import config, data, model, infer, finetune, api  # noqa: F401
     from molforge import MolForge  # noqa: F401
+
+
+# Every local module, by bare name, to prove the folder move didn't break a cross-folder
+# import. Third-party optional deps (pandas, fastapi, ...) are skipped, not failed.
+LOCAL_MODULES = sorted({
+    "config", "data", "model", "infer", "api", "finetune", "membership", "llm",
+    "preprocess", "train", "add_data", "make_split", "generate", "search",
+    "evaluate", "report", "pipeline",
+    "ce_features", "ce_tune", "ce_train", "ce_design", "ce_model", "ce_llm", "ce_rag",
+    "electrolyte", "electrolyte_data", "solvent_lib",
+    "xtb_label", "qm9", "finetune_dft", "openqdc_data", "hf_data",
+    "server", "app", "webengine", "design",
+})
+
+
+@pytest.mark.parametrize("mod", LOCAL_MODULES)
+def test_local_module_imports(mod):
+    import importlib
+    try:
+        importlib.import_module(mod)
+    except ModuleNotFoundError as e:
+        missing = (e.name or "").split(".")[0]
+        if missing in LOCAL_MODULES:
+            raise  # a genuine cross-folder import breakage from the reorg
+        pytest.skip(f"optional dependency '{missing}' not installed")
 
 
 def test_vocab_roundtrip(vocab):
@@ -166,7 +191,7 @@ def test_finetune_cli_end_to_end(tmp_path):
                               "OCCN(CCO)CCO", "CCOC(C)=O", "O=C1OCCO1"]) + "\n")
     out = tmp_path / "ft.pt"
     r = subprocess.run(
-        [sys.executable, "finetune.py", "--input", str(smi),
+        [sys.executable, str(ROOT / "core" / "finetune.py"), "--input", str(smi),
          "--epochs", "1", "--batch", "4", "--device", "cpu", "--out", str(out)],
         cwd=str(ROOT), capture_output=True, text=True,
     )

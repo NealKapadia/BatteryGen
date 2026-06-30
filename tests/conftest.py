@@ -7,11 +7,14 @@ pretrained checkpoint are skipped automatically unless the artifacts are present
 import sys
 from pathlib import Path
 
-# Make the flat modules (config, data, model, ...) importable by bare name,
-# exactly as running `python molvae/<script>.py` does.
+# Put the package root and every purpose subfolder on sys.path so the modules
+# (config, data, ce_features, ...) resolve by bare name, mirroring the runtime shim
+# in molforge/__init__.py.
 ROOT = Path(__file__).resolve().parent.parent
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+for _sub in ("", "core", "generative", "predictive", "electrolyte", "grounding", "webapp"):
+    _p = str(ROOT / _sub) if _sub else str(ROOT)
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 import pytest  # noqa: E402
 import config  # noqa: E402

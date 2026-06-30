@@ -592,6 +592,3 @@ NonCommercial) - see the [LICENSE](LICENSE) file. The weights are derived from t
 "All Stock" catalog, which is itself CC BY-NC 4.0, so the same terms apply: you must credit
 MolForge and Molport, and you may not use the project for commercial purposes. See the
 [Hugging Face model card](https://huggingface.co/NealKapadia/Molforge) for details.
-
-If you use MolForge in your work, please cite this repository and the SELFIES paper
-(Krenn et al., 2020).

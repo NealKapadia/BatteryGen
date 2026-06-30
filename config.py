@@ -54,6 +54,69 @@ XTB_EXE = os.getenv(
 )
 
 # --------------------------------------------------------------------------- #
+# User-supplied datasets (e.g. the CE / predictive-model training CSV)
+# --------------------------------------------------------------------------- #
+# Put your CSV(s) in a "data/" folder where you run the commands and the CE tools
+# find them automatically. Override the folder with $MOLVAE_USER_DATA_DIR, point at
+# a specific file with $MOLVAE_CE_CSV, or pass --csv (highest priority).
+USER_DATA_DIR = Path(os.getenv("MOLVAE_USER_DATA_DIR", "data"))
+
+
+def resolve_ce_csv(explicit: str | None = None) -> Path:
+    """Locate the CE dataset CSV robustly. Priority:
+
+       1. an explicit path (e.g. the ``--csv`` flag)
+       2. the ``$MOLVAE_CE_CSV`` environment variable
+       3. a single ``*.csv`` inside ``USER_DATA_DIR`` (the ``data/`` folder)
+
+    Raises ``SystemExit`` with guidance if nothing is found or the choice is ambiguous.
+    """
+    if explicit:
+        p = Path(explicit)
+        if not p.exists():
+            raise SystemExit(f"CE dataset not found: {p}")
+        return p
+
+    env = os.getenv("MOLVAE_CE_CSV")
+    if env:
+        p = Path(env)
+        if not p.exists():
+            raise SystemExit(f"$MOLVAE_CE_CSV points to a missing file: {p}")
+        return p
+
+    if USER_DATA_DIR.is_dir():
+        csvs = sorted(USER_DATA_DIR.glob("*.csv"))
+        if len(csvs) == 1:
+            return csvs[0]
+        if len(csvs) > 1:
+            names = ", ".join(c.name for c in csvs)
+            raise SystemExit(
+                f"Multiple CSV files in {USER_DATA_DIR.resolve()} ({names}).\n"
+                f"Choose one with  --csv <file>  or set $MOLVAE_CE_CSV."
+            )
+
+    raise SystemExit(
+        "No CE dataset found. Do one of:\n"
+        f"  - place a single .csv in a '{USER_DATA_DIR}' folder ({USER_DATA_DIR.resolve()})\n"
+        "  - pass  --csv path/to/your.csv\n"
+        "  - set the $MOLVAE_CE_CSV environment variable\n"
+        "The CSV needs a SMILES column and a measured-CE column (see README, Workflow D)."
+    )
+
+
+def resolve_ce_csv_optional(explicit: str | None = None) -> Path | None:
+    """Like :func:`resolve_ce_csv` but returns ``None`` when no dataset is configured.
+
+    Still raises for a *named* file that is missing or an ambiguous ``data/`` folder, so
+    user mistakes are not silently ignored; only the "nothing configured" case is soft.
+    """
+    if explicit or os.getenv("MOLVAE_CE_CSV"):
+        return resolve_ce_csv(explicit)
+    if USER_DATA_DIR.is_dir() and sorted(USER_DATA_DIR.glob("*.csv")):
+        return resolve_ce_csv(None)  # one -> path, many -> ambiguity error
+    return None
+
+# --------------------------------------------------------------------------- #
 # Reproducibility / device
 # --------------------------------------------------------------------------- #
 SEED = int(os.getenv("MOLVAE_SEED", "42"))

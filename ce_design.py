@@ -35,20 +35,20 @@ try:  # Windows consoles are cp1252 — LLM text has unicode (Zn²⁺, arrows, e
 except Exception:
     pass
 
-CSV = "Supplementary_Data_1.csv"
 
 
 def _known(csv_path):
     s = set()
-    p = Path(csv_path)
-    if p.exists():
-        s = {r["smiles"] for r in ce_model.load_csv(p)}
+    if csv_path and Path(csv_path).exists():
+        s = {r["smiles"] for r in ce_model.load_csv(Path(csv_path))}
     return s
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--csv", default=CSV)
+    ap.add_argument("--csv", default=None,
+                    help="CE dataset CSV for novelty/seeding (default: auto-detect from data/ "
+                         "or $MOLVAE_CE_CSV; optional)")
     ap.add_argument("--ckpt", default=None, help="VAE generator ckpt (default best.pt)")
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--n", type=int, default=1200, help="candidates generated per round")
@@ -69,6 +69,7 @@ def main():
     ap.add_argument("--llm", action="store_true", help="LLM synthesizability/stability/mechanism triage + judge re-rank")
     ap.add_argument("--out", default="ce_candidates.csv")
     args = ap.parse_args()
+    args.csv = config.resolve_ce_csv_optional(args.csv)
 
     bundle = ce_train.load_production()
     ckpt = ce_model._resolve_ckpt(args.ckpt)
@@ -122,7 +123,7 @@ def main():
     n0 = gen_and_screen(None)
     print(f"\nround 0 (global)      : screened {n0:5d} | best fast-CE {max(screened.values()):.2f}%")
     # round 0b: seed from the highest-CE TRAINING additives (bias the search toward 98+)
-    if args.seed_best and Path(args.csv).exists():
+    if args.seed_best and args.csv and Path(args.csv).exists():
         best_rows = sorted(ce_model.load_csv(Path(args.csv)), key=lambda r: r["ce"], reverse=True)
         top_smis = list(dict.fromkeys(r["smiles"] for r in best_rows))[:args.seed_best]
         latb = ce_model._feat_latent(top_smis, net, vocab, device)

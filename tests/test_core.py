@@ -96,6 +96,34 @@ def test_finetune_rejects_junk(vocab):
         finetune.build_dataset(["not_a_molecule", "@@@@"], vocab)
 
 
+def test_resolve_ce_csv(tmp_path, monkeypatch):
+    import config
+    # explicit path that exists -> returned; missing -> error
+    f = tmp_path / "my.csv"
+    f.write_text("Additive_SMILES,CE_aver. (%)\nCCO,99\n")
+    assert config.resolve_ce_csv(str(f)) == f
+    with pytest.raises(SystemExit):
+        config.resolve_ce_csv(str(tmp_path / "nope.csv"))
+
+    # environment variable
+    monkeypatch.setenv("MOLVAE_CE_CSV", str(f))
+    assert config.resolve_ce_csv(None) == f
+    monkeypatch.delenv("MOLVAE_CE_CSV", raising=False)
+
+    # data/ folder: single CSV -> auto; multiple -> error; none -> error
+    d = tmp_path / "data"
+    d.mkdir()
+    monkeypatch.setattr(config, "USER_DATA_DIR", d)
+    with pytest.raises(SystemExit):           # empty folder
+        config.resolve_ce_csv(None)
+    assert config.resolve_ce_csv_optional(None) is None
+    (d / "a.csv").write_text("x")
+    assert config.resolve_ce_csv(None) == d / "a.csv"
+    (d / "b.csv").write_text("x")
+    with pytest.raises(SystemExit):           # ambiguous
+        config.resolve_ce_csv(None)
+
+
 @requires_stats
 def test_spec_to_condition():
     import config, data

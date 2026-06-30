@@ -258,11 +258,15 @@ from a molecule's structure. Training is three steps: build features, tune, trai
 the `ce` extra (`pip install ".[ce]"`), your labeled dataset (a CSV of molecules with measured
 values), and, for the physics-based features, the xTB program.
 
-1. Build the feature table from your dataset. This runs xTB once per molecule and caches the
-   result, so re-runs are fast:
+1. Provide your dataset, then build the feature table. Put a single CSV in a `data/` folder
+   (the tools detect it automatically), or pass `--csv your.csv`, or set the `MOLVAE_CE_CSV`
+   environment variable. The CSV needs a SMILES column and a measured-CE column; see
+   [`data/README.md`](data/README.md) for the expected column names. Building the features runs
+   xTB once per molecule and caches the result, so re-runs are fast:
 
    ```bash
-   python -m molforge.ce_features --csv Supplementary_Data_1.csv
+   python -m molforge.ce_features                 # auto-detects the CSV in data/
+   # or:  python -m molforge.ce_features --csv path/to/your.csv
    ```
 
 2. Tune the model's hyperparameters automatically with **Optuna**. It searches many settings

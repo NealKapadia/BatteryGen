@@ -1,7 +1,8 @@
 """
 ce_features.py  (step 1/2 of the CE workflow)
 =============================================
-Builds the feature cache the CE model trains on, from Supplementary_Data_1.csv:
+Builds the feature cache the CE model trains on, from your CE dataset CSV
+(located via config.resolve_ce_csv: --csv, $MOLVAE_CE_CSV, or a single file in data/):
 
   X        : DataFrame [RDKit(19) + xTB(7) + LMR]  (FEATURE_ORDER)
   y        : CE_aver (%)
@@ -42,7 +43,6 @@ RDKIT_COLS = ["MolLogP", "TPSA", "HDonor", "HAccept", "RotB", "FracCSP3", "MolWt
 XTB_COLS = ["xtb_HOMO", "xtb_LUMO", "xtb_gap", "xtb_chi", "xtb_eta", "xtb_omega", "xtb_dipole"]
 FEATURE_ORDER = RDKIT_COLS + XTB_COLS + ["LMR"]
 
-CSV = "Supplementary_Data_1.csv"
 SMILES_COL, TARGET_COL = "Additive_SMILES", "CE_aver. (%)"
 TRIP_COLS = ["CE_1 (%)", "CE_2 (%)", "CE_3 (%)"]
 
@@ -173,7 +173,9 @@ def main():
     from rdkit.Chem import AllChem, DataStructs
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("--csv", default=CSV)
+    ap.add_argument("--csv", default=None,
+                    help="CE dataset CSV (default: auto-detect a single CSV in data/, "
+                         "or set $MOLVAE_CE_CSV)")
     ap.add_argument("--no-xtb", action="store_true", help="skip xTB (xtb cols = NaN -> imputed)")
     # active learning: append a measured (SMILES, CE) row, then rebuild the cache
     ap.add_argument("--append-smiles", help="active learning: add this measured additive")
@@ -183,6 +185,7 @@ def main():
     ap.add_argument("--append-addmole", type=float, default=None)
     ap.add_argument("--append-name", default="user_measured")
     args = ap.parse_args()
+    args.csv = config.resolve_ce_csv(args.csv)
     CE_DIR.mkdir(parents=True, exist_ok=True)
 
     if args.append_smiles:

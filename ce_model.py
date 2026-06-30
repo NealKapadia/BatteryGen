@@ -22,9 +22,10 @@ Modes:
   predict  CE for explicit SMILES (+ optional concentration context).
 
 Examples:
-  python molvae/ce_model.py --mode train --csv Supplementary_Data_1.csv
-  python molvae/ce_model.py --mode screen --n 5000 --top 25 --out hits.csv
-  python molvae/ce_model.py --mode suggest --top 25
+  python -m molforge.ce_model --mode train          # dataset auto-detected from data/
+  python -m molforge.ce_model --mode train --csv path/to/your.csv
+  python -m molforge.ce_model --mode screen --n 5000 --top 25 --out hits.csv
+  python -m molforge.ce_model --mode suggest --top 25
   python molvae/ce_model.py --mode predict --smiles "OCCN(CCO)CCO"
 """
 from __future__ import annotations
@@ -370,8 +371,8 @@ def train(args):
 def _load_bundle():
     import joblib
     if not CE_MODEL_PATH.exists():
-        raise SystemExit("No CE model. Train: python molvae/ce_model.py --mode train "
-                         "--csv Supplementary_Data_1.csv")
+        raise SystemExit("No CE model. Train it first: python -m molforge.ce_model --mode train "
+                         "(put your CE dataset CSV in data/, or pass --csv / set $MOLVAE_CE_CSV)")
     return joblib.load(CE_MODEL_PATH)
 
 
@@ -562,7 +563,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--mode", choices=["train", "tune", "screen", "suggest", "design", "predict"],
                     default="train")
-    ap.add_argument("--csv", default="Supplementary_Data_1.csv")
+    ap.add_argument("--csv", default=None,
+                    help="CE dataset CSV (default: auto-detect from data/ or $MOLVAE_CE_CSV)")
     ap.add_argument("--features", default="ecfp+rdkit", help="ecfp / rdkit / latent, '+'-joined")
     ap.add_argument("--ckpt", default=None, help="VAE checkpoint (generator + latent featurizer)")
     ap.add_argument("--device", default="cpu", help="cpu (default; keeps GPU free) or cuda")
@@ -588,6 +590,12 @@ def main():
     ap.add_argument("--no-filter", action="store_true",
                     help="disable the unstable/reactive-chemistry filter on candidates")
     args = ap.parse_args()
+    args.csv = config.resolve_ce_csv_optional(args.csv)
+    if args.mode in ("train", "tune", "suggest") and args.csv is None:
+        raise SystemExit(
+            f"'{args.mode}' needs a CE dataset. Put a single CSV in a 'data/' folder, "
+            "pass --csv path/to/your.csv, or set $MOLVAE_CE_CSV."
+        )
 
     if args.mode in ("train", "tune"):
         if args.mode == "tune":

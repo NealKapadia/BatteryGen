@@ -6,7 +6,7 @@ molecules) with a predictive model (it estimates how well a molecule will perfor
 them together into an automated inverse-design loop.
 
 Under the hood the generator is a *conditional variational autoencoder* trained on
-**7,116,053 molecules curated from five public chemistry databases** (Molport, ChEMBL, and
+**9,135,485 molecules curated from five public chemistry databases** (Molport, ChEMBL, and
 ZINC for broad chemical coverage, plus electrolyte data from OEDB and CALiSol-23), using
 [SELFIES](https://github.com/aspuru-guzik-group/selfies) so that **almost every structure it
 produces is chemically valid**. It learns a smooth map of chemical space that you can sample,
@@ -15,12 +15,12 @@ ranks candidates by predicted battery-relevant performance.
 
 ```mermaid
 flowchart LR
-    SMILES["5 databases: Molport, ChEMBL, ZINC, OEDB, CALiSol-23"] --> GEN["Generative model (SELFIES-VAE)"]
-    DATASET["Labeled performance dataset (CSV)"] --> PRED["Predictive model (ExtraTrees + XGBoost)"]
+    SMILES["Five databases - Molport, ChEMBL, ZINC, OEDB, CALiSol-23"] --> GEN["Generative model - SELFIES-VAE"]
+    DATASET["Labeled performance dataset"] --> PRED["Predictive model - ExtraTrees and XGBoost"]
     GEN --> LOOP["Inverse-design loop"]
     PRED --> LOOP
-    KB["Literature knowledge base (optional)"] --> LOOP
-    LOOP --> OUT["Ranked candidate molecules (ce_candidates.csv)"]
+    KB["Literature knowledge base - optional"] --> LOOP
+    LOOP --> OUT["Ranked candidate molecules"]
 ```
 
 This guide is written so that someone with limited programming experience can run each part.
@@ -30,17 +30,18 @@ Follow the steps in order, and copy-paste the commands.
 
 ## Training data and provenance
 
-MolForge was **not** trained on a single source. The generator was trained on **7,116,053
+MolForge was **not** trained on a single source. The generator was trained on **9,135,485
 molecules** drawn from five public databases, filtered (3-60 heavy atoms, organic elements)
 and de-duplicated:
 
 | Database | Molecules used | Role |
 |---|---|---|
 | Molport "All Stock" | 6,088,143 | core corpus of purchasable molecules |
-| ChEMBL-37 | 800,000 | bioactive chemical diversity |
+| ChEMBL-37 | 2,800,000 | bioactive chemical diversity |
 | ZINC | 227,902 | additional lead-like diversity |
-| OEDB + CALiSol-23 | electrolyte data | see below |
-| **Total (generator)** | **7,116,053** | |
+| OEDB | 5,616 | electrolyte diversity |
+| CALiSol-23 | 13,824 | electrolyte diversity |
+| **Total (generator)** | **9,135,485** | |
 
 OEDB and CALiSol-23 are *electrolyte* datasets: beyond a handful of solvent molecules, they
 contribute **18,918 electrolyte formulations** (ionic conductivity, ion coordination,
@@ -280,11 +281,11 @@ A GPU is strongly recommended; on CPU it is only practical for small datasets.
 
 ```mermaid
 flowchart LR
-    A["Your SMILES file"] --> B["molforge-add-data (tokenize + descriptors)"]
-    B --> C["molforge-make-split (optional held-out split)"]
-    C --> D["molforge-train (GPU training)"]
-    D --> E["best.pt (your new model)"]
-    E --> F["molforge-evaluate (quality metrics)"]
+    A["Your SMILES file"] --> B["molforge-add-data - tokenize and descriptors"]
+    B --> C["molforge-make-split - optional held-out split"]
+    C --> D["molforge-train - GPU training"]
+    D --> E["best.pt - your new model"]
+    E --> F["molforge-evaluate - quality metrics"]
 ```
 
 1. Choose a writable output folder for all artifacts:
@@ -334,9 +335,9 @@ dataset, and, for the physics-based features, the xTB program.
 
 ```mermaid
 flowchart LR
-    A["Your CE dataset (CSV in data/)"] --> B["molforge-ce-features (RDKit + xTB features)"]
-    B --> C["molforge-ce-tune (Optuna hyperparameter search)"]
-    C --> D["molforge-ce-train (fit + lock the model)"]
+    A["Your CE dataset - CSV in the data folder"] --> B["molforge-ce-features - RDKit and xTB features"]
+    B --> C["molforge-ce-tune - Optuna hyperparameter search"]
+    C --> D["molforge-ce-train - fit and lock the model"]
     D --> E["production_model.pkl"]
 ```
 
@@ -388,16 +389,16 @@ list of proposed additives.
 
 ```mermaid
 flowchart TB
-    PR["Plain-English prompt (optional, --llm)"] --> GEN
+    PR["Plain-English prompt - optional LLM"] --> GEN
     GEN["Generative model"] --> POOL["Generate candidate pool"]
-    POOL --> SCREEN["Screen with predictive model (fast)"]
+    POOL --> SCREEN["Screen with predictive model - fast"]
     SCREEN --> RESEED["Re-seed around the best"]
     RESEED --> POOL
     SCREEN --> SHORT["Shortlist"]
     SHORT --> XTB["Refine with full xTB physics"]
     XTB --> RANK["Rank by predicted CE minus uncertainty"]
-    KB["Literature KB (optional, --rag)"] --> RANK
-    RANK --> OUT["ce_candidates.csv + rationale"]
+    KB["Literature KB - optional RAG"] --> RANK
+    RANK --> OUT["ce_candidates.csv plus rationale"]
 ```
 
 Basic run:

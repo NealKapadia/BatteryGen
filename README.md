@@ -6,7 +6,7 @@ molecules) with a predictive model (it estimates how well a molecule will perfor
 them together into an automated inverse-design loop.
 
 Under the hood the generator is a *conditional variational autoencoder* trained on
-**9,135,485 molecules curated from five public chemistry databases** (Molport, ChEMBL, and
+**7,116,053 molecules curated from five public chemistry databases** (Molport, ChEMBL, and
 ZINC for broad chemical coverage, plus electrolyte data from OEDB and CALiSol-23), using
 [SELFIES](https://github.com/aspuru-guzik-group/selfies) so that **almost every structure it
 produces is chemically valid**. It learns a smooth map of chemical space that you can sample,
@@ -30,18 +30,17 @@ Follow the steps in order, and copy-paste the commands.
 
 ## Training data and provenance
 
-MolForge was **not** trained on a single source. The generator was trained on **9,135,485
+MolForge was **not** trained on a single source. The generator was trained on **7,116,053
 molecules** drawn from five public databases, filtered (3-60 heavy atoms, organic elements)
 and de-duplicated:
 
 | Database | Molecules used | Role |
 |---|---|---|
 | Molport "All Stock" | 6,088,143 | core corpus of purchasable molecules |
-| ChEMBL-37 | 2,800,000 | bioactive chemical diversity |
+| ChEMBL-37 (sample) | 800,000 | bioactive chemical diversity |
 | ZINC | 227,902 | additional lead-like diversity |
-| OEDB | 5,616 | electrolyte diversity |
-| CALiSol-23 | 13,824 | electrolyte diversity |
-| **Total (generator)** | **9,135,485** | |
+| OEDB + CALiSol-23 (solvents) | 8 | electrolyte solvents in the generator |
+| **Total (generator)** | **7,116,053** | |
 
 OEDB and CALiSol-23 are *electrolyte* datasets: beyond a handful of solvent molecules, they
 contribute **18,918 electrolyte formulations** (ionic conductivity, ion coordination,

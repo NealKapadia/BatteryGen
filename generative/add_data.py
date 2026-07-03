@@ -20,9 +20,12 @@ import gzip
 import json
 from pathlib import Path
 
-import config
-import data
-import preprocess
+from molforge.core import config
+
+from molforge.core import data
+
+from molforge.generative import preprocess
+
 
 
 def _iter_sdf(path: Path, id_prefix: str):
@@ -117,7 +120,7 @@ def main():
 
     dedup = None
     if args.dedup:
-        from membership import MolportIndex
+        from molforge.core.membership import MolportIndex
         _idx = MolportIndex()
         if _idx.available:
             dedup = lambda c: _idx.contains(c, already_canonical=True)

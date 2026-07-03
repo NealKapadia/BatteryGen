@@ -20,7 +20,8 @@ import json
 import numpy as np
 from tqdm import tqdm
 
-import config
+from molforge.core import config
+
 
 
 def _init():

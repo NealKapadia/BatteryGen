@@ -21,10 +21,13 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-import config
-import data
-import infer
-from membership import MolportIndex
+from molforge.core import config
+
+from molforge.core import data
+
+from molforge.core import infer
+
+from molforge.core.membership import MolportIndex
 
 
 @torch.no_grad()
@@ -160,7 +163,7 @@ def main():
     args = ap.parse_args()
 
     if args.build_pubchem_from:
-        from membership import BloomFilter
+        from molforge.core.membership import BloomFilter
         from pathlib import Path
         n = 0
         bloom = BloomFilter(120_000_000, 1e-4)  # PubChem-scale
@@ -178,7 +181,7 @@ def main():
     pubchem_bloom = None
     bloom_path = Path(args.pubchem_bloom) if args.pubchem_bloom else (config.MEMBER_DIR / "pubchem.bloom")
     if bloom_path.exists():
-        from membership import BloomFilter
+        from molforge.core.membership import BloomFilter
         pubchem_bloom = BloomFilter.load(bloom_path)
         print(f"Using PubChem bloom: {bloom_path.name}")
 

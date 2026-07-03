@@ -21,10 +21,13 @@ from typing import Dict, List, Tuple
 import numpy as np
 import torch
 
-import config
-import data
-import infer
-from membership import MolportIndex
+from molforge.core import config
+
+from molforge.core import data
+
+from molforge.core import infer
+
+from molforge.core.membership import MolportIndex
 
 
 def _bounds(spec: Dict, tol: float) -> Dict[str, Tuple[float, float]]:

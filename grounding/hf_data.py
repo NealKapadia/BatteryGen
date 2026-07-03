@@ -19,7 +19,8 @@ import argparse
 
 from tqdm import tqdm
 
-import config
+from molforge.core import config
+
 
 HF_NAME = "hheiden/PubChem-124M-SMILES-SELFIES-InChI-IUPAC"
 
@@ -41,7 +42,7 @@ def _stream_smiles(max_n: int):
 
 
 def _canon(smi):
-    import data  # rdkit loaded on import
+    from molforge.core import data  # rdkit loaded on import
 
     return data.canonical_smiles(smi)
 
@@ -57,7 +58,7 @@ def sample(max_n: int, out: str):
 
 def build_bloom(max_n: int, out: str, workers: int, capacity: int):
     import multiprocessing as mp
-    from membership import BloomFilter
+    from molforge.core.membership import BloomFilter
 
     bloom = BloomFilter(max(capacity, max_n or capacity), 1e-4)
     n = 0

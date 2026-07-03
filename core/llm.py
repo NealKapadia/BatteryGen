@@ -5,7 +5,7 @@ without touching call sites. Endpoints/keys are read from the environment (.env)
 If the ``openai`` SDK or the keys are missing, everything falls back to a
 dependency-free keyword parser, so the rest of the pipeline never breaks.
 
-  from llm import nl_to_spec
+  from molforge.core.llm import nl_to_spec
   nl_to_spec("a small, very soluble, drug-like molecule with few rotatable bonds")
   # -> {"MolWt": 250, "MolLogP": 0.5, "TPSA": 90, "QED": 0.85, "NumRotatableBonds": 2}
 """
@@ -17,7 +17,8 @@ import re
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
-import config
+from molforge.core import config
+
 
 # Load .env next to this file if python-dotenv is available (optional).
 try:  # pragma: no cover
@@ -29,6 +30,11 @@ except Exception:
 
 FOUNDRY_ENDPOINT = os.getenv("FOUNDRY_ENDPOINT", "https://zincbatteryresearch.services.ai.azure.com/openai/v1")
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "https://batterymlresearch.openai.azure.com/openai/v1")
+FOUNDRY_API_KEY = os.getenv("FOUNDRY_API_KEY")
+JUDGE_MODEL = os.getenv("JUDGE_MODEL", "gpt-5.4")
+REASONER_MODEL = os.getenv("REASONER_MODEL", "DeepSeek-V4-Pro")
+FAST_MODEL = os.getenv("FAST_MODEL", "Kimi-K2.6")
+EMBED_MODEL = os.getenv("EMBED_MODEL", "text-embedding-3-large")
 
 
 @dataclass
@@ -40,16 +46,16 @@ class ModelRoute:
 
 # Pick the model whose strengths match the job; swap deployments here only.
 ROUTES: Dict[str, ModelRoute] = {
-    "judge":    ModelRoute("gpt-5.4",                 AZURE_OPENAI_ENDPOINT, "AZURE_OPENAI_KEY"),
-    "reasoner": ModelRoute("DeepSeek-V4-Pro",         FOUNDRY_ENDPOINT,      "FOUNDRY_API_KEY"),
-    "fast":     ModelRoute("Kimi-K2.6",               FOUNDRY_ENDPOINT,      "FOUNDRY_API_KEY"),
-    "embed":    ModelRoute("text-embedding-3-large",  FOUNDRY_ENDPOINT,      "FOUNDRY_API_KEY"),
+    "judge":    ModelRoute(JUDGE_MODEL, AZURE_OPENAI_ENDPOINT, FOUNDRY_API_KEY),
+    "reasoner": ModelRoute(REASONER_MODEL,   FOUNDRY_ENDPOINT,      FOUNDRY_API_KEY),
+    "fast":     ModelRoute(FAST_MODEL,  FOUNDRY_ENDPOINT,  FOUNDRY_API_KEY),
+    "embed":    ModelRoute(EMBED_MODEL,  FOUNDRY_ENDPOINT, FOUNDRY_API_KEY),
 }
 
 
 def _client(route: ModelRoute):
     """Build an OpenAI-compatible client, or None if unavailable."""
-    key = os.getenv(route.key_env)
+    key = os.getenv(route.key_env) if route.key_env else None
     if not key:
         return None
     try:

@@ -23,10 +23,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import config
-import data
-import infer
-import model as M
+from molforge.core import config
+
+from molforge.core import data
+
+from molforge.core import infer
+
+from molforge.core import model as M
+
 
 DFT_CKPT = config.CKPT_DIR / "dft_latest.pt"
 
@@ -209,7 +213,7 @@ def generate(args):
     with torch.no_grad():
         seqs = net.sample(z.size(0), cond, vocab.bos, vocab.eos,
                           temperature=args.temperature, z=z.detach(), device=device)
-    from membership import MolportIndex
+    from molforge.core.membership import MolportIndex
 
     index = MolportIndex()
     rows, seen = [], set()
@@ -225,7 +229,8 @@ def generate(args):
     verified = {}
     if args.verify and rows:
         import tempfile
-        import xtb_label
+        from molforge.grounding import xtb_label
+
 
         scratch = Path(tempfile.mkdtemp(prefix="xtbv_"))
         import os

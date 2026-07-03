@@ -18,9 +18,11 @@ from typing import Dict, List
 
 import torch
 
-import config
-import infer
-from membership import MolportIndex
+from molforge.core import config
+
+from molforge.core import infer
+
+from molforge.core.membership import MolportIndex
 
 
 def generate(net, vocab, spec: Dict[str, float], n: int, *, temperature: float,

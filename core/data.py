@@ -14,7 +14,8 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-import config
+from molforge.core import config
+
 
 # --------------------------------------------------------------------------- #
 # SELFIES constraints (pinned, shared by encode + decode)

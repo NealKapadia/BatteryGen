@@ -27,7 +27,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-import config
+from molforge.core import config
+
 
 MOLVAE = Path(__file__).resolve().parent
 PY = sys.executable

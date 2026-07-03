@@ -18,7 +18,8 @@ import argparse
 import csv
 from pathlib import Path
 
-import config
+from molforge.core import config
+
 
 
 def _smiles_of(entry):

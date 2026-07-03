@@ -23,9 +23,12 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-import config
-import data
-import model as M
+from molforge.core import config
+
+from molforge.core import data
+
+from molforge.core import model as M
+
 
 
 def set_seed(seed: int):

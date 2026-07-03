@@ -7,17 +7,13 @@ pretrained checkpoint are skipped automatically unless the artifacts are present
 import sys
 from pathlib import Path
 
-# Put the package root and every purpose subfolder on sys.path so the modules
-# (config, data, ce_features, ...) resolve by bare name, mirroring the runtime shim
-# in molforge/__init__.py.
-ROOT = Path(__file__).resolve().parent.parent
-for _sub in ("", "core", "generative", "predictive", "electrolyte", "grounding", "webapp"):
-    _p = str(ROOT / _sub) if _sub else str(ROOT)
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+# Make the `molforge` package importable when running pytest from inside the repo folder.
+ROOT = Path(__file__).resolve().parent.parent          # .../molforge
+if str(ROOT.parent) not in sys.path:
+    sys.path.insert(0, str(ROOT.parent))
 
 import pytest  # noqa: E402
-import config  # noqa: E402
+from molforge.core import config  # noqa: E402
 
 
 def _weights_available() -> bool:
@@ -41,5 +37,5 @@ requires_stats = pytest.mark.skipif(
 
 @pytest.fixture(scope="session")
 def vocab():
-    import data
+    from molforge.core import data
     return data.Vocab.build()

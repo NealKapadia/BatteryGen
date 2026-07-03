@@ -31,10 +31,8 @@ dependencies = [
 [project.optional-dependencies]
 # Training / preprocessing / evaluation progress bars (train.py, preprocess.py, evaluate.py)
 train = ["tqdm"]
-# CE inverse-design predictor + tuning (ce_*.py)
-ce = ["pandas", "scikit-learn", "xgboost", "optuna", "joblib", "tqdm"]
-# Local REST API / web app (server.py, webengine.py)
-app = ["fastapi", "uvicorn[standard]", "python-multipart", "pandas", "scikit-learn", "joblib"]
+# Predictive + inverse-design pipeline (features/select/tune/train/design)
+predict = ["pandas", "scikit-learn", "xgboost", "optuna", "joblib", "tqdm", "matplotlib"]
 # Natural-language request parsing + explanations (llm.py, needs Azure keys in .env)
 llm = ["openai", "python-dotenv"]
 # DFT grounding (qm9.py via PyTorch Geometric) + xTB-label fine-tuning
@@ -44,7 +42,6 @@ report = ["matplotlib", "scikit-learn"]
 # Everything above, in one install.
 full = [
     "tqdm", "pandas", "scikit-learn", "joblib", "xgboost", "optuna",
-    "fastapi", "uvicorn[standard]", "python-multipart",
     "openai", "python-dotenv", "torch-geometric", "matplotlib",
 ]
 
@@ -64,12 +61,12 @@ molforge-search = "molforge.generative.search:main"
 molforge-evaluate = "molforge.generative.evaluate:main"
 molforge-report = "molforge.generative.report:main"
 molforge-pipeline = "molforge.generative.pipeline:main"
-molforge-ce-features = "molforge.predictive.ce_features:main"
-molforge-ce-tune = "molforge.predictive.ce_tune:main"      # Optuna hyperparameter tuning
-molforge-ce-train = "molforge.predictive.ce_train:main"    # train the predictive model
-molforge-ce-design = "molforge.predictive.ce_design:main"  # full inverse-design pipeline
-molforge-ce-model = "molforge.predictive.ce_model:main"
-molforge-ce-rag = "molforge.predictive.ce_rag:main"        # manage the literature knowledge base
+molforge-pred-features = "molforge.predictive.features:main"  # 1. featurize the dataset
+molforge-pred-select = "molforge.predictive.select:main"      # 2. shortlist features (RFE-CV)
+molforge-pred-tune = "molforge.predictive.tune:main"          # 3. Optuna hyperparameter tuning
+molforge-pred-train = "molforge.predictive.train:main"        # 4. train the predictive model
+molforge-pred-design = "molforge.predictive.design:main"      # 5. full inverse-design pipeline
+molforge-pred-rag = "molforge.predictive.rag:main"            # manage the literature knowledge base
 molforge-electrolyte = "molforge.electrolyte.electrolyte:main"
 molforge-xtb-label = "molforge.grounding.xtb_label:main"
 molforge-qm9 = "molforge.grounding.qm9:main"
@@ -85,15 +82,10 @@ packages = [
     "molforge.predictive",
     "molforge.electrolyte",
     "molforge.grounding",
-    "molforge.webapp",
 ]
 
 [tool.setuptools.package-dir]
 molforge = "."
-
-# Ship the web UI assets with the webapp subpackage.
-[tool.setuptools.package-data]
-"molforge.webapp" = ["static/*"]
 
 # Don't sweep the model weights, raw data, datasets, or local caches into the wheel.
 [tool.setuptools.exclude-package-data]

@@ -22,8 +22,10 @@ from typing import Dict, List, Optional
 
 from tqdm import tqdm
 
-import config
-import data
+from molforge.core import config
+
+from molforge.core import data
+
 
 _RE_GAP = re.compile(r"HOMO-LUMO gap\s+(-?\d+\.\d+)", re.IGNORECASE)
 _RE_HOMO = re.compile(r"(-?\d+\.\d+)\s+\(HOMO\)")

@@ -44,10 +44,13 @@ class MolForge:
                  artifacts_dir: Optional[str] = None):
         if artifacts_dir:
             os.environ["MOLVAE_ART_DIR"] = artifacts_dir
-        import config
-        import infer
+        from molforge.core import config
+
+        from molforge.core import infer
+
         self._config, self._infer = config, infer
-        import data
+        from molforge.core import data
+
         self._data = data
         ckpt = ckpt or str(config.CKPT_DIR / "best.pt")
         self.net, self.vocab, self.ck, self.device = infer.load_model(ckpt, device=device)

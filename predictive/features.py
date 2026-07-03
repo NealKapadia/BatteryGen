@@ -1,22 +1,27 @@
 """
-ce_features.py  (step 1/2 of the CE workflow)
-=============================================
-Builds the feature cache the CE model trains on, from your CE dataset CSV
-(located via config.resolve_ce_csv: --csv, $MOLVAE_CE_CSV, or a single file in data/):
+predictive/features.py  (pipeline step 1)
+=========================================
+Builds the feature cache the predictive model trains on, from your dataset CSV
+(located via config.resolve_ce_csv: --csv, $MOLVAE_CE_CSV, or a single file in data/).
+The schema is read entirely from ``TARGET`` (predictive/target.py) - no column name is
+hardcoded here, so the same code serves any chemistry / any measured target.
 
-  X        : DataFrame [RDKit(19) + xTB(7) + LMR]  (FEATURE_ORDER)
-  y        : CE_aver (%)
-  cov      : per-row coefficient of variation of the CE_1/2/3 triplicate (%) -> noise filter
-  groups   : Bemis-Murcko scaffold (acyclic -> own SMILES) for scaffold GroupKFold
-  feat_med : per-feature median (impute missing xTB at inference)
-  train_fps/train_smiles : Morgan fps for the domain-similarity readout
+Cache contents:
+  X            : DataFrame [RDKit(19) + xTB(7, optional) + TARGET.context_cols]
+  y            : the TARGET.target_col value
+  cov          : per-row coefficient of variation of the replicate columns (%), for the
+                 noise filter (0 for every row when TARGET.replicate_cols is empty)
+  groups       : Bemis-Murcko scaffold (acyclic -> own SMILES) for scaffold GroupKFold
+  feat_med     : per-feature median (impute missing xTB at inference)
+  train_fps    : Morgan fingerprints for the domain-similarity readout
+  feature_order: the exact column order of X
 
-xTB (GFN2 single-point) gives HOMO/LUMO/gap/dipole per UNIQUE additive; chi/eta/omega are
-derived. Results are cached to ce/xtb_cache.csv so re-runs are instant. Charged fragments
-(e.g. acetate from a Na-salt) are run at their RDKit formal charge.
+xTB (GFN2 single-point) gives HOMO/LUMO/gap/dipole per UNIQUE molecule; chi/eta/omega are
+derived. Results are cached to predictive/xtb_cache.csv so re-runs are instant. Charged
+fragments are run at their RDKit formal charge.
 
-Run:  python molvae/ce_features.py [--no-xtb]   (--no-xtb fills xTB cols with NaN -> imputed)
-Output: molvae_artifacts/ce/feature_cache.pkl
+Run:  python -m molforge.predictive.features [--no-xtb]
+Output: <artifacts>/predictive/feature_cache.pkl
 """
 from __future__ import annotations
 
@@ -30,21 +35,24 @@ import numpy as np
 import pandas as pd
 import joblib
 
-import config
-import data
-
-CE_DIR = config.ARTIFACTS / "ce" if hasattr(config, "ARTIFACTS") else config.CKPT_DIR.parent / "ce"
-CACHE = CE_DIR / "feature_cache.pkl"
-XTB_CACHE = CE_DIR / "xtb_cache.csv"
+from molforge.core import config
+from molforge.core import data
+from molforge.predictive.target import TARGET
+from molforge.predictive import paths
 
 RDKIT_COLS = ["MolLogP", "TPSA", "HDonor", "HAccept", "RotB", "FracCSP3", "MolWt",
               "NHOH", "NOCount", "BertzCT", "MolMR", "MaxAbsQ", "MinQ", "ArRings",
               "AliRings", "LabuteASA", "QED", "nN", "nO"]
 XTB_COLS = ["xtb_HOMO", "xtb_LUMO", "xtb_gap", "xtb_chi", "xtb_eta", "xtb_omega", "xtb_dipole"]
-FEATURE_ORDER = RDKIT_COLS + XTB_COLS + ["LMR"]
 
-SMILES_COL, TARGET_COL = "Additive_SMILES", "CE_aver. (%)"
-TRIP_COLS = ["CE_1 (%)", "CE_2 (%)", "CE_3 (%)"]
+
+def feature_order(use_xtb: bool) -> list:
+    """The full candidate-feature column order for the current TARGET."""
+    cols = list(RDKIT_COLS)
+    if use_xtb:
+        cols += XTB_COLS
+    cols += list(TARGET.context_cols)
+    return cols
 
 
 # --------------------------------------------------------------------------- #
@@ -92,8 +100,8 @@ def scaffold_of(smiles: str) -> str:
 
 def load_xtb_cache() -> dict:
     cache = {}
-    if XTB_CACHE.exists():
-        with open(XTB_CACHE, encoding="utf-8") as f:
+    if paths.XTB_CACHE.exists():
+        with open(paths.XTB_CACHE, encoding="utf-8") as f:
             for r in csv.DictReader(f):
                 cache[r["smiles"]] = {k: (float(r[k]) if r[k] not in ("", "None") else None)
                                       for k in ("homo", "lumo", "gap", "dipole")}
@@ -103,17 +111,18 @@ def load_xtb_cache() -> dict:
 def compute_xtb(smiles_list, cache: dict):
     """Fill xTB HOMO/LUMO/gap/dipole for any uncached molecule; persist incrementally."""
     from rdkit import Chem
-    import xtb_label
+    from molforge.grounding import xtb_label
 
     todo = [s for s in smiles_list if s not in cache]
     if not todo:
         return cache
     print(f"  xTB: {len(todo)} new molecules ({len(cache)} cached) ...")
     env = dict(os.environ); env.setdefault("OMP_NUM_THREADS", "4")
-    scratch = Path(tempfile.mkdtemp(prefix="xtb_ce_"))
-    write_header = not XTB_CACHE.exists()
+    scratch = Path(tempfile.mkdtemp(prefix="xtb_pred_"))
+    write_header = not paths.XTB_CACHE.exists()
+    paths.PRED_DIR.mkdir(parents=True, exist_ok=True)
     from tqdm import tqdm
-    with open(XTB_CACHE, "a", newline="", encoding="utf-8") as f:
+    with open(paths.XTB_CACHE, "a", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=["smiles", "homo", "lumo", "gap", "dipole"])
         if write_header:
             w.writeheader()
@@ -148,96 +157,111 @@ def xtb_derived(rec: dict) -> dict:
     return out
 
 
-def _append_measurement(csv_path: Path, smiles, ce, lmr, zn, addmole, name):
-    """Append one measured row to the CE CSV (active learning). Triplicate cols = CE."""
-    import pandas as pd
+def _row_cov(row: dict) -> float:
+    """Coefficient of variation (%) of the replicate columns; 0 when no replicates configured."""
+    if not TARGET.replicate_cols:
+        return 0.0
+    try:
+        trip = [float(row[c]) for c in TARGET.replicate_cols]
+    except (KeyError, ValueError):
+        return 999.0
+    mean = np.mean(trip)
+    return float(np.std(trip) / mean * 100.0) if mean else 999.0
+
+
+def _append_measurement(csv_path: Path, smiles, value, context_overrides: dict, name):
+    """Append one measured row (active learning). Replicate columns are set to `value`;
+    context columns use the provided override or the column median."""
     df = pd.read_csv(csv_path, encoding="utf-8-sig")
-    def med(col, override):
-        return float(override) if override is not None else float(df[col].median())
-    row = {
-        "#": len(df) + 1,
-        "Zn_mole (mmol)": med("Zn_mole (mmol)", zn),
-        "Additive_mole (%)": med("Additive_mole (%)", addmole),
-        "LogMolarRatio": med("LogMolarRatio", lmr),
-        "Additive_SMILES": smiles, "IUPAC_NAME": name,
-        "CE_1 (%)": ce, "CE_2 (%)": ce, "CE_3 (%)": ce, "CE_aver. (%)": ce,
-    }
+    row = {TARGET.smiles_col: smiles, "IUPAC_NAME": name, TARGET.target_col: value}
+    for c in TARGET.replicate_cols:
+        row[c] = value
+    for c in TARGET.context_cols:
+        row[c] = float(context_overrides[c]) if c in context_overrides else float(df[c].median())
     df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
     df.to_csv(csv_path, index=False, encoding="utf-8-sig")
-    print(f"[active-learning] appended {smiles} (CE {ce}%) -> {csv_path} "
-          f"(now {len(df)} rows). Rebuilding cache; then run ce_train.")
+    print(f"[active-learning] appended {smiles} ({TARGET.target_name}={value}) -> {csv_path} "
+          f"(now {len(df)} rows). Rebuilding cache; then run select + train.")
 
 
 def main():
     from rdkit import Chem
-    from rdkit.Chem import AllChem, DataStructs
+    from rdkit.Chem import AllChem
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--csv", default=None,
-                    help="CE dataset CSV (default: auto-detect a single CSV in data/, "
-                         "or set $MOLVAE_CE_CSV)")
-    ap.add_argument("--no-xtb", action="store_true", help="skip xTB (xtb cols = NaN -> imputed)")
-    # active learning: append a measured (SMILES, CE) row, then rebuild the cache
-    ap.add_argument("--append-smiles", help="active learning: add this measured additive")
-    ap.add_argument("--append-ce", type=float, help="its measured CE_aver (%%)")
-    ap.add_argument("--append-lmr", type=float, default=None, help="its LogMolarRatio (default median)")
-    ap.add_argument("--append-zn", type=float, default=None)
-    ap.add_argument("--append-addmole", type=float, default=None)
+                    help="dataset CSV (default: auto-detect a single CSV in data/, or $MOLVAE_CE_CSV)")
+    ap.add_argument("--no-xtb", dest="xtb", action="store_false", default=TARGET.use_xtb,
+                    help="skip xTB (xtb cols dropped from the feature set)")
+    ap.add_argument("--xtb", dest="xtb", action="store_true", help="force xTB on")
+    # active learning: append a measured (SMILES, value) row, then rebuild the cache
+    ap.add_argument("--append-smiles", help="active learning: add this measured molecule")
+    ap.add_argument("--append-value", type=float, help=f"its measured {TARGET.target_name}")
+    ap.add_argument("--append-context", default="",
+                    help="context overrides as 'col=val,col=val' (default: column medians)")
     ap.add_argument("--append-name", default="user_measured")
     args = ap.parse_args()
     args.csv = config.resolve_ce_csv(args.csv)
-    CE_DIR.mkdir(parents=True, exist_ok=True)
+    use_xtb = args.xtb
+    paths.PRED_DIR.mkdir(parents=True, exist_ok=True)
 
     if args.append_smiles:
-        if args.append_ce is None:
-            raise SystemExit("--append-smiles requires --append-ce")
-        _append_measurement(Path(args.csv), args.append_smiles, args.append_ce,
-                            args.append_lmr, args.append_zn, args.append_addmole, args.append_name)
-        # fall through: rebuild the cache so the new row is included (xTB computed + cached)
+        if args.append_value is None:
+            raise SystemExit("--append-smiles requires --append-value")
+        overrides = {}
+        for kv in args.append_context.split(","):
+            if "=" in kv:
+                k, v = kv.split("=", 1); overrides[k.strip()] = v.strip()
+        _append_measurement(Path(args.csv), args.append_smiles, args.append_value, overrides, args.append_name)
+        # fall through: rebuild the cache so the new row is included
 
+    order = feature_order(use_xtb)
     rows = []
     with open(args.csv, encoding="utf-8-sig", newline="") as f:
         for r in csv.DictReader(f):
-            canon = data.canonical_smiles((r.get(SMILES_COL) or "").strip())
+            canon = data.canonical_smiles((r.get(TARGET.smiles_col) or "").strip())
             if not canon:
                 continue
             try:
-                trip = [float(r[c]) for c in TRIP_COLS]
-                y = float(r[TARGET_COL])
-                lmr = float(r["LogMolarRatio"])
+                y = float(r[TARGET.target_col])
+                context = {c: float(r[c]) for c in TARGET.context_cols}
             except (KeyError, ValueError):
                 continue
-            mean = np.mean(trip)
-            cov = float(np.std(trip) / mean * 100.0) if mean else 999.0
-            rows.append({"smiles": canon, "y": y, "lmr": lmr, "cov": cov})
-    print(f"Loaded {len(rows)} rows | {len(set(r['smiles'] for r in rows))} unique additives")
+            rows.append({"smiles": canon, "y": y, "context": context, "cov": _row_cov(r)})
+    print(f"Loaded {len(rows)} rows | {len(set(r['smiles'] for r in rows))} unique molecules "
+          f"| target='{TARGET.target_col}' | xTB={'on' if use_xtb else 'off'}")
 
     uniq = list(dict.fromkeys(r["smiles"] for r in rows))
     rd = {s: rdkit_features(s) for s in uniq}
     rd = {s: v for s, v in rd.items() if v is not None}
 
-    xc = {} if args.no_xtb else load_xtb_cache()
-    if not args.no_xtb:
-        xc = compute_xtb(uniq, xc)
-    xd = {s: xtb_derived(xc.get(s, {})) for s in uniq}
+    xd = {}
+    if use_xtb:
+        xc = compute_xtb(uniq, load_xtb_cache())
+        xd = {s: xtb_derived(xc.get(s, {})) for s in uniq}
 
     X, y, cov, groups, kept_smiles = [], [], [], [], []
     for r in rows:
         s = r["smiles"]
         if s not in rd:
             continue
-        feat = dict(rd[s]); feat.update(xd.get(s, {c: np.nan for c in XTB_COLS}))
-        feat["LMR"] = r["lmr"]
-        X.append([feat[c] for c in FEATURE_ORDER])
+        feat = dict(rd[s])
+        if use_xtb:
+            feat.update(xd.get(s, {c: np.nan for c in XTB_COLS}))
+        feat.update(r["context"])
+        X.append([feat.get(c, np.nan) for c in order])
         y.append(r["y"]); cov.append(r["cov"]); groups.append(scaffold_of(s)); kept_smiles.append(s)
 
-    Xdf = pd.DataFrame(X, columns=FEATURE_ORDER)
+    Xdf = pd.DataFrame(X, columns=order)
     feat_med = Xdf.median(numeric_only=True)
     Xdf = Xdf.fillna(feat_med)                       # impute failed xTB with medians
-    n_xtb_ok = int(np.isfinite([xd[s]["xtb_HOMO"] for s in uniq]).sum())
-    print(f"Feature matrix {Xdf.shape} | xTB ok for {n_xtb_ok}/{len(uniq)} unique mols")
+    if use_xtb:
+        n_xtb_ok = int(np.isfinite([xd[s]["xtb_HOMO"] for s in uniq]).sum())
+        print(f"Feature matrix {Xdf.shape} | xTB ok for {n_xtb_ok}/{len(uniq)} unique mols")
+    else:
+        print(f"Feature matrix {Xdf.shape}")
 
-    # Morgan fps for domain-similarity readout
+    # Morgan fps for the domain-similarity readout
     fps = []
     for s in kept_smiles:
         m = Chem.MolFromSmiles(s)
@@ -245,11 +269,12 @@ def main():
 
     joblib.dump(dict(X=Xdf, y=np.asarray(y, float), cov=np.asarray(cov, float),
                      groups=np.asarray(groups, object), feat_med=feat_med,
-                     train_fps=fps, train_smiles=kept_smiles, feature_order=FEATURE_ORDER),
-                CACHE)
-    keep = np.asarray(cov) <= 3.0
-    print(f"COV<=3.0 keeps {keep.sum()}/{len(cov)} rows")
-    print(f"Saved -> {CACHE}")
+                     train_fps=fps, train_smiles=kept_smiles, feature_order=order,
+                     use_xtb=use_xtb),
+                paths.FEATURE_CACHE)
+    keep = np.asarray(cov) <= TARGET.max_cov
+    print(f"CoV<={TARGET.max_cov} keeps {keep.sum()}/{len(cov)} rows")
+    print(f"Saved -> {paths.FEATURE_CACHE}")
 
 
 if __name__ == "__main__":

@@ -31,7 +31,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import config
+from molforge.core import config
+
 
 CATIONS = ["Li", "Na", "K", "Rb", "Cs", "Mg", "Ca", "Sr", "Ba",
            "Zn", "Al", "Fe", "H", "NH4", "other"]
@@ -50,9 +51,12 @@ def _onehot(name, table, n):
 
 # --------------------------------------------------------------------------- VAE
 def get_vae(ckpt, allow_untrained=False):
-    import infer
-    import model as M
-    import data as _data
+    from molforge.core import infer
+
+    from molforge.core import model as M
+
+    from molforge.core import data as _data
+
 
     device = config.get_device()
     path = Path(ckpt) if ckpt else (config.CKPT_DIR / "latest.pt")
@@ -68,7 +72,8 @@ def get_vae(ckpt, allow_untrained=False):
 @torch.no_grad()
 def latents_for(net, vocab, smiles, device, batch=256):
     import selfies as sf
-    import data as _data
+    from molforge.core import data as _data
+
 
     uniq = [s for s in dict.fromkeys(smiles) if s]
     rows, keys = [], []
@@ -272,7 +277,8 @@ def screen(args):
     xm = torch.tensor(st["xm"], device=device); xs = torch.tensor(st["xs"], device=device)
     ym = np.asarray(st["ym"]); ys = np.asarray(st["ys"])
 
-    import generate as G
+    from molforge.generative import generate as G
+
     spec = json.loads(args.spec) if args.spec else {"MolWt": 110, "NumAromaticRings": 0}
     rows = G.generate(net_vae, vocab, spec, args.n, temperature=args.temperature,
                       molport_only=False, device=device)
@@ -282,7 +288,7 @@ def screen(args):
     if st["use_anion"] and args.anion:
         anion_lat = next(iter(latents_for(net_vae, vocab, [args.anion], device).values()), None)
 
-    from membership import MolportIndex
+    from molforge.core.membership import MolportIndex
     index = MolportIndex()
     scored = []
     for smi in cand:
@@ -307,8 +313,10 @@ def screen(args):
 
 # ------------------------------------------------------------------------ demo
 def demo(args):
-    import data as _data
-    import infer
+    from molforge.core import data as _data
+
+    from molforge.core import infer
+
     print("DEMO: synthetic electrolyte data (validates the pipeline end-to-end).\n")
     net, vocab, _, device = get_vae(args.ckpt, allow_untrained=True)
     rng = np.random.RandomState(0)

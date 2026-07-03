@@ -22,7 +22,8 @@ import struct
 from pathlib import Path
 from typing import Iterable, Optional
 
-import config
+from molforge.core import config
+
 
 _BLOOM_MAGIC = b"MVBLOOM1"
 
@@ -121,7 +122,7 @@ class MolportIndex:
     def _canon(self, raw_or_canon: str, already_canonical: bool) -> Optional[str]:
         if already_canonical:
             return raw_or_canon
-        from data import canonical_smiles  # lazy: avoids importing rdkit unless needed
+        from molforge.core.data import canonical_smiles  # lazy: avoids importing rdkit unless needed
 
         return canonical_smiles(raw_or_canon)
 

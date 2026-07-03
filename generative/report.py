@@ -22,7 +22,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-import config
+from molforge.core import config
+
 
 PAPER = {
     "Mol-CycleGAN": [0.923, 0.996, 0.951, 0.869, 0.538, 0.462],
@@ -119,8 +120,10 @@ def benchmark_table(ev):
 def latent_pca():
     import numpy as np
     import torch
-    import data as _data
-    import infer
+    from molforge.core import data as _data
+
+    from molforge.core import infer
+
     net, vocab, _, device = infer.load_model(None, device="cpu")
     ds = _data.MolDataset("val")
     from torch.utils.data import DataLoader

@@ -19,8 +19,10 @@ import csv
 from pathlib import Path
 from typing import List, Optional
 
-import config
-import solvent_lib as S
+from molforge.core import config
+
+from molforge.electrolyte import solvent_lib as S
+
 
 OUT_DEFAULT = config.ART_DIR / "electrolyte_train.csv"
 FIELDS = ["mix", "cation", "anion_smiles", "conc", "temp", "conductivity",

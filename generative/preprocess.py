@@ -22,9 +22,12 @@ from typing import List
 import numpy as np
 from tqdm import tqdm
 
-import config
-import data
-import membership
+from molforge.core import config
+
+from molforge.core import data
+
+from molforge.core import membership
+
 
 # Worker-global vocab (loaded once per process by the Pool initializer).
 _VOCAB = None
@@ -32,14 +35,15 @@ _VOCAB = None
 
 def _init_worker():
     global _VOCAB
-    import data as _d  # re-import in spawned process
+    from molforge.core import data as _d  # re-import in spawned process
 
     _VOCAB = _d.Vocab.load()
 
 
 def _worker(args):
     smiles, mid = args
-    import data as _d
+    from molforge.core import data as _d
+
 
     return _d.process_record(smiles, mid, _VOCAB)
 

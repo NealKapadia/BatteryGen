@@ -1,20 +1,20 @@
 """
-ce_rag.py — literature knowledge base + retrieval for the CE workflow.
-=====================================================================
-A tiny, dependency-light RAG store over `text-embedding-3-large` (llm.embed). The user
-grows it over time with their own papers/notes; ce_design retrieves relevant passages to
-(a) ground the mechanistic rationale in real literature and (b) flag novelty (a candidate
-whose nearest literature match is very similar is "already explored").
+predictive/rag.py - literature knowledge base + retrieval for the design workflow.
+==================================================================================
+A tiny, dependency-light RAG store over `text-embedding-3-large` (llm.embed). Grow it with
+your own papers/notes; design.py retrieves relevant passages to (a) ground the mechanistic
+rationale in real literature and (b) flag novelty (a candidate whose nearest literature
+match is very similar is "already explored"). Retrieval queries are framed by TARGET.
 
-Storage (molvae_artifacts/ce/kb/):
+Storage (<artifacts>/predictive/kb/):
   chunks.jsonl   one {id, source, text} per line
   emb.npy        float32 [N, dim] aligned to chunks order
 
 CLI:
-  python molvae/ce_rag.py --add paper.txt --source "Zhang 2024 JACS"   # add a document
-  python molvae/ce_rag.py --add-text "TFE additive raises Zn CE to 99.4% by ..." --source note
-  python molvae/ce_rag.py --query "amide additives for zinc anode SEI" --k 5
-  python molvae/ce_rag.py --list
+  python -m molforge.predictive.rag --add paper.txt --source "Zhang 2024 JACS"
+  python -m molforge.predictive.rag --add-text "TFE additive raises CE to 99.4% by ..." --source note
+  python -m molforge.predictive.rag --query "amide additives for the anode SEI" --k 5
+  python -m molforge.predictive.rag --list
 """
 from __future__ import annotations
 
@@ -25,17 +25,16 @@ from pathlib import Path
 
 import numpy as np
 
-import config
-import llm
+from molforge.core import llm
+from molforge.predictive.target import TARGET
+from molforge.predictive import paths
 
-KB_DIR = config.CKPT_DIR.parent / "ce" / "kb"
-CHUNKS = KB_DIR / "chunks.jsonl"
-EMB = KB_DIR / "emb.npy"
+CHUNKS = paths.KB_DIR / "chunks.jsonl"
+EMB = paths.KB_DIR / "emb.npy"
 
-# Abuse guards (esp. for the public web app): cap documents and per-doc size so the
-# embedding API can't be hammered. Override via env for trusted/local use.
-MAX_SOURCES = int(os.getenv("CE_RAG_MAX_SOURCES", "10"))
-MAX_CHUNKS_PER_DOC = int(os.getenv("CE_RAG_MAX_CHUNKS_PER_DOC", "40"))
+# Abuse guards: cap documents and per-doc size so the embedding API can't be hammered.
+MAX_SOURCES = int(os.getenv("CE_RAG_MAX_SOURCES", "50"))
+MAX_CHUNKS_PER_DOC = int(os.getenv("CE_RAG_MAX_CHUNKS_PER_DOC", "80"))
 
 
 def _chunk_text(text: str, words: int = 220, overlap: int = 40):
@@ -59,22 +58,20 @@ def _load():
 
 
 def add_document(text: str, source: str) -> int:
-    """Chunk -> embed -> append to the store. Returns #chunks added (0 = rejected/empty/no key).
-    Enforces MAX_SOURCES distinct documents and MAX_CHUNKS_PER_DOC to bound LLM usage."""
+    """Chunk -> embed -> append to the store. Returns #chunks added (0 = rejected/empty/no key)."""
     chunks, _ = _load()
     existing_sources = {c["source"] for c in chunks}
     if source not in existing_sources and len(existing_sources) >= MAX_SOURCES:
-        print(f"[rag] limit reached: {MAX_SOURCES} documents already in the KB. "
-              f"Remove some (or raise CE_RAG_MAX_SOURCES) before adding more.")
+        print(f"[rag] limit reached: {MAX_SOURCES} documents already in the KB.")
         return 0
     pieces = _chunk_text(text)[:MAX_CHUNKS_PER_DOC]
     if not pieces:
         return 0
     vecs = llm.embed(pieces)
     if vecs is None:
-        print("[rag] embeddings unavailable (set FOUNDRY_API_KEY) — nothing added.")
+        print("[rag] embeddings unavailable (set FOUNDRY_API_KEY) - nothing added.")
         return 0
-    KB_DIR.mkdir(parents=True, exist_ok=True)
+    paths.KB_DIR.mkdir(parents=True, exist_ok=True)
     chunks, emb = _load()
     start = len(chunks)
     new = np.asarray(vecs, np.float32)
@@ -105,7 +102,7 @@ def query(text: str, k: int = 5):
 
 def context_for(smiles: str, mechanism: str = "", k: int = 4):
     """Retrieve KB passages relevant to a candidate; returns (context_text, top_score)."""
-    hits = query(f"zinc battery additive {smiles} {mechanism} coulombic efficiency SEI", k)
+    hits = query(f"{TARGET.system} {smiles} {mechanism} {TARGET.objective}", k)
     if not hits:
         return "", 0.0
     ctx = "\n".join(f"[{h['source']}] {h['text'][:400]}" for h in hits)

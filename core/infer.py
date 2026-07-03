@@ -10,9 +10,12 @@ from typing import Dict, List, Optional
 import numpy as np
 import torch
 
-import config
-import data
-import model as M
+from molforge.core import config
+
+from molforge.core import data
+
+from molforge.core import model as M
+
 
 
 def load_model(ckpt_path: Optional[str] = None, device=None):
@@ -34,7 +37,8 @@ def resolve_spec(spec: Optional[Dict], prompt: Optional[str]) -> Dict[str, float
     merged: Dict[str, float] = {}
     if prompt:
         try:
-            import llm
+            from molforge.core import llm
+
 
             merged.update(llm.nl_to_spec(prompt))
         except Exception as e:  # pragma: no cover - optional path

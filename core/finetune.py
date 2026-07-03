@@ -39,10 +39,14 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-import config
-import data
-import infer
-import model as M
+from molforge.core import config
+
+from molforge.core import data
+
+from molforge.core import infer
+
+from molforge.core import model as M
+
 
 try:  # optional pretty progress; never a hard dependency
     from tqdm import tqdm

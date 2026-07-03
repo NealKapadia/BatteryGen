@@ -19,7 +19,8 @@ import argparse
 import csv
 from pathlib import Path
 
-import config
+from molforge.core import config
+
 
 # PyG QM9 y-column order -> our names (first 12 are the chemically relevant ones).
 _PYG_COLS = {0: "dipole", 1: "alpha", 2: "homo", 3: "lumo", 4: "gap",

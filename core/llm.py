@@ -20,17 +20,25 @@ from typing import Dict, List, Optional
 from molforge.core import config
 
 
-# Load .env next to this file if python-dotenv is available (optional).
+# Load keys from a .env if python-dotenv is available (optional). Look at the package-root
+# .env (molforge/.env) first, then any .env discovered from the current working directory.
+# load_dotenv never overrides variables already set in the real environment.
 try:  # pragma: no cover
+    from pathlib import Path as _Path
     from dotenv import load_dotenv
 
-    load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+    load_dotenv(_Path(__file__).resolve().parents[1] / ".env")
+    load_dotenv()
 except Exception:
     pass
 
 FOUNDRY_ENDPOINT = os.getenv("FOUNDRY_ENDPOINT", "https://zincbatteryresearch.services.ai.azure.com/openai/v1")
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "https://batterymlresearch.openai.azure.com/openai/v1")
+# Foundry hosts the reasoner/fast/embed models; Azure OpenAI hosts the judge. Each route
+# carries the actual API key value for its endpoint (the judge falls back to the Foundry key
+# if a separate Azure OpenAI key is not configured).
 FOUNDRY_API_KEY = os.getenv("FOUNDRY_API_KEY")
+AZURE_OPENAI_KEY = os.getenv("AZURE_OPENAI_KEY") or FOUNDRY_API_KEY
 JUDGE_MODEL = os.getenv("JUDGE_MODEL", "gpt-5.4")
 REASONER_MODEL = os.getenv("REASONER_MODEL", "DeepSeek-V4-Pro")
 FAST_MODEL = os.getenv("FAST_MODEL", "Kimi-K2.6")
@@ -41,28 +49,27 @@ EMBED_MODEL = os.getenv("EMBED_MODEL", "text-embedding-3-large")
 class ModelRoute:
     model: str
     endpoint: str
-    key_env: str
+    key: Optional[str]      # resolved API key value for this route's endpoint
 
 
 # Pick the model whose strengths match the job; swap deployments here only.
 ROUTES: Dict[str, ModelRoute] = {
-    "judge":    ModelRoute(JUDGE_MODEL, AZURE_OPENAI_ENDPOINT, FOUNDRY_API_KEY),
-    "reasoner": ModelRoute(REASONER_MODEL,   FOUNDRY_ENDPOINT,      FOUNDRY_API_KEY),
-    "fast":     ModelRoute(FAST_MODEL,  FOUNDRY_ENDPOINT,  FOUNDRY_API_KEY),
-    "embed":    ModelRoute(EMBED_MODEL,  FOUNDRY_ENDPOINT, FOUNDRY_API_KEY),
+    "judge":    ModelRoute(JUDGE_MODEL,    AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_KEY),
+    "reasoner": ModelRoute(REASONER_MODEL, FOUNDRY_ENDPOINT,      FOUNDRY_API_KEY),
+    "fast":     ModelRoute(FAST_MODEL,     FOUNDRY_ENDPOINT,      FOUNDRY_API_KEY),
+    "embed":    ModelRoute(EMBED_MODEL,    FOUNDRY_ENDPOINT,      FOUNDRY_API_KEY),
 }
 
 
 def _client(route: ModelRoute):
-    """Build an OpenAI-compatible client, or None if unavailable."""
-    key = os.getenv(route.key_env) if route.key_env else None
-    if not key:
+    """Build an OpenAI-compatible client, or None if the key/SDK is unavailable."""
+    if not route.key:
         return None
     try:
         from openai import OpenAI
     except Exception:
         return None
-    return OpenAI(base_url=route.endpoint, api_key=key)
+    return OpenAI(base_url=route.endpoint, api_key=route.key)
 
 
 _SYSTEM = (

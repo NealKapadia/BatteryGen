@@ -93,7 +93,7 @@ def test_public_import_is_batterygen():
 
 
 def test_no_legacy_module_is_importable_from_the_tree():
-    """A stale `molforge` copy in site-packages must not shadow or survive the rename."""
+    """A stale copy of a legacy package name in site-packages must not shadow or survive the rename."""
     import importlib
     for token in LEGACY_TOKENS:
         try:
@@ -163,7 +163,7 @@ def test_every_console_script_target_resolves(name, target):
 # 4. Environment variables
 # --------------------------------------------------------------------------- #
 def test_all_env_vars_use_the_new_prefix():
-    """No `os.getenv("MOLVAE_...")` / `MOLFORGE_...` left in the tracked tree."""
+    """No `os.getenv(...)` call using either legacy env-var prefix is left in the tracked tree."""
     pattern = re.compile(r"\b(" + "|".join(LEGACY_ENV_PREFIXES) + r")[A-Z_]+")
     offenders: list[str] = []
     for path in _tracked_files():

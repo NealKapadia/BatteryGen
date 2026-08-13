@@ -89,7 +89,7 @@ On these standard generative-benchmark columns, BatteryGen is competitive with -
 columns exceeds - the autoregressive ElectrolyteGPT (Kim et al., *JACS Au*, 2026, 6, 2288-2302).
 
 Pretrained weights, the model card, and full evaluation details:
-[huggingface.co/NealKapadia/BatteryGen](https://huggingface.co/NealKapadia/BatteryGen)
+[huggingface.co/SuLabUTD/BatteryGen](https://huggingface.co/SuLabUTD/BatteryGen)
 
 ---
 
@@ -199,13 +199,15 @@ pip install "git+https://github.com/NealKapadia/BatteryGen.git"
 
 ### Step 5 - Get the model weights
 
-The trained weights (about 0.5 GB) live on Hugging Face, separate from the code. The easiest
-option is to let the code download them automatically on first use (Workflow A). To download
-them yourself into a folder you control:
+The trained weights (about 0.5 GB) live on Hugging Face, separate from the code, as a
+**gated repo** - request access on the [model page](https://huggingface.co/SuLabUTD/BatteryGen)
+and log in locally first (`huggingface-cli login` or `huggingface_hub.login()`) before
+downloading. The easiest option is to let the code download them automatically on first use
+(Workflow A). To download them yourself into a folder you control:
 
 ```python
 from huggingface_hub import snapshot_download
-print("Weights at:", snapshot_download("NealKapadia/BatteryGen"))
+print("Weights at:", snapshot_download("SuLabUTD/BatteryGen"))
 ```
 
 This folder holds `checkpoints/best.pt` (the model) and `processed/` (vocabulary and
@@ -216,7 +218,7 @@ variable `BATTERYGEN_ART_DIR` to point at it.
 > the weights folder, so use a **writable copy** rather than the read-only download cache.
 > Stage one once:
 > ```bash
-> python -c "from huggingface_hub import snapshot_download; import shutil; shutil.copytree(snapshot_download('NealKapadia/BatteryGen'),'artifacts',dirs_exist_ok=True)"
+> python -c "from huggingface_hub import snapshot_download; import shutil; shutil.copytree(snapshot_download('SuLabUTD/BatteryGen'),'artifacts',dirs_exist_ok=True)"
 > ```
 > then point at it:
 > `export BATTERYGEN_ART_DIR="$PWD/artifacts"` (Windows PowerShell: `$env:BATTERYGEN_ART_DIR = "$PWD\artifacts"`).
@@ -240,7 +242,7 @@ from huggingface_hub import snapshot_download
 from batterygen import BatteryGen
 
 # Loads the model (downloads weights on first run). Use device="cuda" if you have a GPU.
-bg = BatteryGen(device="cpu", artifacts_dir=snapshot_download("NealKapadia/BatteryGen"))
+bg = BatteryGen(device="cpu", artifacts_dir=snapshot_download("SuLabUTD/BatteryGen"))
 
 print(bg.generate(10))                                    # 10 valid, novel molecules
 print(bg.generate(5, spec={"MolWt": 300, "QED": 0.8}))    # aimed at target properties
@@ -657,4 +659,4 @@ Both the **code and the model weights** are released under **CC BY-NC 4.0** (Att
 NonCommercial) - see the [LICENSE](LICENSE) file. The weights are derived from the Molport
 "All Stock" catalog, which is itself CC BY-NC 4.0, so the same terms apply: you must credit
 BatteryGen and Molport, and you may not use the project for commercial purposes. See the
-[Hugging Face model card](https://huggingface.co/NealKapadia/BatteryGen) for details.
+[Hugging Face model card](https://huggingface.co/SuLabUTD/BatteryGen) for details.

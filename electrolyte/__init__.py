@@ -1,1 +1,1 @@
-"""MolForge electrolyte modules. Imported via the package; see molforge/__init__.py."""
+"""BatteryGen electrolyte modules. Imported via the package; see batterygen/__init__.py."""

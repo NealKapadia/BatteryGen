@@ -11,10 +11,10 @@ Storage (<artifacts>/predictive/kb/):
   emb.npy        float32 [N, dim] aligned to chunks order
 
 CLI:
-  python -m molforge.predictive.rag --add paper.txt --source "Zhang 2024 JACS"
-  python -m molforge.predictive.rag --add-text "TFE additive raises CE to 99.4% by ..." --source note
-  python -m molforge.predictive.rag --query "amide additives for the anode SEI" --k 5
-  python -m molforge.predictive.rag --list
+  python -m batterygen.predictive.rag --add paper.txt --source "Zhang 2024 JACS"
+  python -m batterygen.predictive.rag --add-text "TFE additive raises CE to 99.4% by ..." --source note
+  python -m batterygen.predictive.rag --query "amide additives for the anode SEI" --k 5
+  python -m batterygen.predictive.rag --list
 """
 from __future__ import annotations
 
@@ -25,9 +25,9 @@ from pathlib import Path
 
 import numpy as np
 
-from molforge.core import llm
-from molforge.predictive.target import TARGET
-from molforge.predictive import paths
+from batterygen.core import llm
+from batterygen.predictive.target import TARGET
+from batterygen.predictive import paths
 
 CHUNKS = paths.KB_DIR / "chunks.jsonl"
 EMB = paths.KB_DIR / "emb.npy"

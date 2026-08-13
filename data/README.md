@@ -6,11 +6,11 @@ Put your **predictive-model datasets** here (CSV files). The CE tools
 How a dataset is located, in priority order:
 
 1. an explicit `--csv path/to/file.csv` on the command line;
-2. the `MOLVAE_CE_CSV` environment variable;
+2. the `BATTERYGEN_CE_CSV` environment variable;
 3. a single `.csv` file in this `data/` folder.
 
 If this folder contains exactly one CSV, it is used with no extra flags. If it contains
-several, the tools ask you to pick one with `--csv` or `MOLVAE_CE_CSV`.
+several, the tools ask you to pick one with `--csv` or `BATTERYGEN_CE_CSV`.
 
 ## Expected columns (Coulombic-Efficiency dataset)
 

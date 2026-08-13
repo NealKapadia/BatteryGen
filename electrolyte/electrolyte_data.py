@@ -10,7 +10,7 @@ Output: electrolyte_train.csv with columns
   mix (smi:frac;smi:frac), cation, anion_smiles, conc, temp,
   conductivity, viscosity, coord_cat_anion, coord_cat_solvent, density, source
 
-  python molvae/electrolyte_data.py        # uses the files in the data dir
+  python -m batterygen.electrolyte.electrolyte_data        # uses the files in the data dir
 """
 from __future__ import annotations
 
@@ -19,9 +19,9 @@ import csv
 from pathlib import Path
 from typing import List, Optional
 
-from molforge.core import config
+from batterygen.core import config
 
-from molforge.electrolyte import solvent_lib as S
+from batterygen.electrolyte import solvent_lib as S
 
 
 OUT_DEFAULT = config.ART_DIR / "electrolyte_train.csv"
@@ -135,7 +135,7 @@ def main():
     print(f"\nWrote {len(rows):,} formulations -> {args.out}")
     print(f"Cations present: {cations}")
     print("Note: conductivity assumed mS/cm for both sources; verify CALiSol-23 units if needed.")
-    print("Next: python molvae/electrolyte.py --mode train --csv " + args.out +
+    print("Next: python -m batterygen.electrolyte.electrolyte --mode train --csv " + args.out +
           " --mix-col mix --cation-col cation --anion-smiles-col anion_smiles "
           "--conc-col conc --temp-col temp --target-cols conductivity --log-target")
 

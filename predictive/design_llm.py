@@ -17,8 +17,8 @@ from __future__ import annotations
 import json
 from typing import Dict, List, Optional
 
-from molforge.core import llm
-from molforge.predictive.target import TARGET
+from batterygen.core import llm
+from batterygen.predictive.target import TARGET
 
 # Descriptor keys the LLM may constrain (must match features.rdkit_features output).
 PROPS = ["MolWt", "TPSA", "HDonor", "HAccept", "RotB", "FracCSP3", "MolLogP", "QED"]

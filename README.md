@@ -1,12 +1,12 @@
-# MolForge
+# BatteryGen
 
-MolForge is an AI toolkit for **inventing new molecules** and **designing better battery
+BatteryGen is an AI toolkit for **inventing new molecules** and **designing better battery
 electrolyte additives**. It pairs a pretrained generative model (it dreams up novel, valid
 molecules) with a predictive model (it estimates how well a molecule will perform) and ties
 them together into an automated inverse-design loop.
 
 The predictive + inverse-design pipeline is **config-driven and chemistry-agnostic**: one
-small settings block (`molforge/predictive/target.py`) points the whole pipeline at any
+small settings block (`batterygen/predictive/target.py`) points the whole pipeline at any
 measured target and any working ion, so the same code designs additives for **lithium,
 sodium, potassium, or zinc** batteries — you edit the config, not the code.
 
@@ -34,7 +34,7 @@ flowchart LR
 
 ## Training data and provenance
 
-MolForge was **not** trained on a single source. The generator was trained on **7,116,053
+BatteryGen was **not** trained on a single source. The generator was trained on **7,116,053
 molecules** drawn from five public databases, filtered (3-60 heavy atoms, organic elements)
 and de-duplicated:
 
@@ -50,20 +50,20 @@ OEDB and CALiSol-23 are *electrolyte* datasets: beyond a handful of solvent mole
 contribute **18,918 electrolyte formulations** (ionic conductivity, ion coordination,
 viscosity) used to train the separate **electrolyte property model**, which scores generated
 molecules for battery-relevant performance across cations (Li / Na / K / Mg / Zn / ...). This is
-how MolForge targets **battery electrolytes** rather than only general organic chemistry: the
+how BatteryGen targets **battery electrolytes** rather than only general organic chemistry: the
 generator proposes structures, and the predictive model - grounded in real measured data -
 ranks them.
 
-## How MolForge differs from existing models
+## How BatteryGen differs from existing models
 
 - **A latent space, not left-to-right text generation.** Autoregressive models (e.g.
-  ElectrolyteGPT, MolGPT) emit one token at a time. MolForge's VAE gives a continuous latent
+  ElectrolyteGPT, MolGPT) emit one token at a time. BatteryGen's VAE gives a continuous latent
   space you can **interpolate** and **optimize with gradients** - for example "increase
   molecular weight by 10 while keeping everything else," which a token model cannot do.
 - **Validity by construction.** Because it decodes SELFIES, essentially **100%** of generated
   strings are valid molecules (measured validity 1.000), versus SMILES-based models that
   routinely emit invalid strings.
-- **A complete inverse-design system, not just a generator.** MolForge pairs the generator with
+- **A complete inverse-design system, not just a generator.** BatteryGen pairs the generator with
   a **predictive model** (with RFE-CV feature selection and Optuna tuning), optional **LLM**
   guidance, and a **literature-grounded** retrieval step - an end-to-end loop from a
   plain-English request to a ranked, scored candidate list.
@@ -85,11 +85,11 @@ Measured on `best.pt`, 5,000 generated samples at temperature 0.9:
 | Reconstruction (exact) | 0.945 |
 | Reconstruction (token accuracy) | 0.998 |
 
-On these standard generative-benchmark columns, MolForge is competitive with - and on several
+On these standard generative-benchmark columns, BatteryGen is competitive with - and on several
 columns exceeds - the autoregressive ElectrolyteGPT (Kim et al., *JACS Au*, 2026, 6, 2288-2302).
 
 Pretrained weights, the model card, and full evaluation details:
-[huggingface.co/NealKapadia/Molforge](https://huggingface.co/NealKapadia/Molforge)
+[huggingface.co/NealKapadia/BatteryGen](https://huggingface.co/NealKapadia/BatteryGen)
 
 ---
 
@@ -97,7 +97,7 @@ Pretrained weights, the model card, and full evaluation details:
 
 - [Training data and provenance](#training-data-and-provenance)
 - [Benchmark results](#benchmark-results)
-- [How MolForge differs from existing models](#how-molforge-differs-from-existing-models)
+- [How BatteryGen differs from existing models](#how-batterygen-differs-from-existing-models)
 
 1. [What you can do](#1-what-you-can-do)
 2. [What you need](#2-what-you-need)
@@ -116,8 +116,8 @@ Pretrained weights, the model card, and full evaluation details:
 15. [Troubleshooting](#15-troubleshooting)
 16. [License and attribution](#16-license-and-attribution)
 
-Every step below is shown as `python -m molforge.<module>`, which works from the folder that
-contains the `molforge` package and after a `pip install`. Installing also creates equivalent
+Every step below is shown as `python -m batterygen.<module>`, which works from the folder that
+contains the `batterygen` package and after a `pip install`. Installing also creates equivalent
 short commands (see [Command reference](#14-command-reference)) if you prefer them.
 
 ---
@@ -162,8 +162,8 @@ If `python --version` is below 3.10, install it from
 ### Step 2 - Download the code
 
 ```bash
-git clone https://github.com/NealKapadia/molforge.git
-cd molforge
+git clone https://github.com/NealKapadia/BatteryGen.git
+cd batterygen
 ```
 
 (No git? Use the green "Code" button on GitHub, then "Download ZIP", unzip, and open a
@@ -172,13 +172,13 @@ terminal in that folder.)
 ### Step 3 - (Recommended) Create a clean environment
 
 ```bash
-python -m venv molforge-env
+python -m venv batterygen-env
 # Activate it:
-#   Windows (PowerShell):  molforge-env\Scripts\Activate.ps1
-#   macOS / Linux:         source molforge-env/bin/activate
+#   Windows (PowerShell):  batterygen-env\Scripts\Activate.ps1
+#   macOS / Linux:         source batterygen-env/bin/activate
 ```
 
-### Step 4 - Install MolForge
+### Step 4 - Install BatteryGen
 
 ```bash
 pip install .              # core: generate, encode/decode, score, fine-tune
@@ -187,6 +187,12 @@ pip install ".[full]"      # everything: predictive pipeline, training tools, re
 
 You can install one capability at a time, for example `pip install ".[predict]"` (the
 predictive + inverse-design pipeline) or `pip install ".[llm]"` (natural-language features).
+
+Skipping Step 2 and installing straight from GitHub works too:
+
+```bash
+pip install "git+https://github.com/NealKapadia/BatteryGen.git"
+```
 
 > **NVIDIA GPU users:** install the CUDA build of PyTorch *first*, then the command above:
 > `pip install torch --index-url https://download.pytorch.org/whl/cu124`
@@ -199,21 +205,21 @@ them yourself into a folder you control:
 
 ```python
 from huggingface_hub import snapshot_download
-print("Weights at:", snapshot_download("NealKapadia/Molforge"))
+print("Weights at:", snapshot_download("NealKapadia/BatteryGen"))
 ```
 
 This folder holds `checkpoints/best.pt` (the model) and `processed/` (vocabulary and
 normalization files). The code finds it automatically; you can also set the environment
-variable `MOLVAE_ART_DIR` to point at it.
+variable `BATTERYGEN_ART_DIR` to point at it.
 
 > **Tip for the training, fine-tuning, and predictive workflows:** those write new files into
 > the weights folder, so use a **writable copy** rather than the read-only download cache.
 > Stage one once:
 > ```bash
-> python -c "from huggingface_hub import snapshot_download; import shutil; shutil.copytree(snapshot_download('NealKapadia/Molforge'),'artifacts',dirs_exist_ok=True)"
+> python -c "from huggingface_hub import snapshot_download; import shutil; shutil.copytree(snapshot_download('NealKapadia/BatteryGen'),'artifacts',dirs_exist_ok=True)"
 > ```
 > then point at it:
-> `export MOLVAE_ART_DIR="$PWD/artifacts"` (Windows PowerShell: `$env:MOLVAE_ART_DIR = "$PWD\artifacts"`).
+> `export BATTERYGEN_ART_DIR="$PWD/artifacts"` (Windows PowerShell: `$env:BATTERYGEN_ART_DIR = "$PWD\artifacts"`).
 
 ---
 
@@ -222,23 +228,23 @@ variable `MOLVAE_ART_DIR` to point at it.
 The quickest check, from the command line:
 
 ```bash
-python -m molforge.core.api --n 20
-python -m molforge.core.api --n 10 --spec '{"MolWt":250,"NumAromaticRings":1}'
-python -m molforge.core.api --n 10 --device cuda --out molecules.csv
+python -m batterygen.core.api --n 20
+python -m batterygen.core.api --n 10 --spec '{"MolWt":250,"NumAromaticRings":1}'
+python -m batterygen.core.api --n 10 --device cuda --out molecules.csv
 ```
 
 Or from Python - create `try_it.py` and run `python try_it.py`:
 
 ```python
 from huggingface_hub import snapshot_download
-from molforge import MolForge
+from batterygen import BatteryGen
 
 # Loads the model (downloads weights on first run). Use device="cuda" if you have a GPU.
-mf = MolForge(device="cpu", artifacts_dir=snapshot_download("NealKapadia/Molforge"))
+bg = BatteryGen(device="cpu", artifacts_dir=snapshot_download("NealKapadia/BatteryGen"))
 
-print(mf.generate(10))                                    # 10 valid, novel molecules
-print(mf.generate(5, spec={"MolWt": 300, "QED": 0.8}))    # aimed at target properties
-for row in mf.generate(5, with_properties=True):          # molecules plus their properties
+print(bg.generate(10))                                    # 10 valid, novel molecules
+print(bg.generate(5, spec={"MolWt": 300, "QED": 0.8}))    # aimed at target properties
+for row in bg.generate(5, with_properties=True):          # molecules plus their properties
     print(row)
 ```
 
@@ -250,19 +256,19 @@ strict requirements, generate extra molecules and filter by their computed prope
 ## 5. Encode, decode, and score molecules
 
 ```python
-z = mf.encode("OCCN(CCO)CCO")   # molecule -> 256-number latent vector
-mf.decode(z)                     # latent vector -> molecule
-mf.properties("CCO")             # standard RDKit descriptors
-mf.predict_properties("CCO")     # the model's own property predictions
+z = bg.encode("OCCN(CCO)CCO")   # molecule -> 256-number latent vector
+bg.decode(z)                     # latent vector -> molecule
+bg.properties("CCO")             # standard RDKit descriptors
+bg.predict_properties("CCO")     # the model's own property predictions
 ```
 
 To explore variations around a molecule, encode it, nudge the vector, and decode:
 
 ```python
 import numpy as np
-z = mf.encode("CC(=O)[O-]")
+z = bg.encode("CC(=O)[O-]")
 for _ in range(10):
-    print(mf.decode(z + np.random.randn(*z.shape).astype("float32") * 0.6))
+    print(bg.decode(z + np.random.randn(*z.shape).astype("float32") * 0.6))
 ```
 
 ---
@@ -273,20 +279,20 @@ Fine-tuning adapts the trained model toward your chemistry. It builds its traini
 directly from a text file of SMILES, so it does **not** need the original training data.
 
 1. Put your molecules in a file, one SMILES per line, e.g. `my_molecules.smi`.
-2. Point `MOLVAE_ART_DIR` at a **writable** copy of the weights (see the tip in Step 5).
+2. Point `BATTERYGEN_ART_DIR` at a **writable** copy of the weights (see the tip in Step 5).
 3. Fine-tune:
 
 ```bash
-python -m molforge.core.finetune --input my_molecules.smi --epochs 3          # add --device cuda for a GPU
-python -m molforge.core.finetune --input solvents.csv --smiles-col 0 --header --delim ,   # CSV input
+python -m batterygen.core.finetune --input my_molecules.smi --epochs 3          # add --device cuda for a GPU
+python -m batterygen.core.finetune --input solvents.csv --smiles-col 0 --header --delim ,   # CSV input
 ```
 
 The result is saved as `artifacts/checkpoints/finetuned.pt`. Use it:
 
 ```python
-from molforge import MolForge
-mf = MolForge(device="cpu", ckpt="artifacts/checkpoints/finetuned.pt")
-print(mf.generate(20))
+from batterygen import BatteryGen
+bg = BatteryGen(device="cpu", ckpt="artifacts/checkpoints/finetuned.pt")
+print(bg.generate(20))
 ```
 
 A pure-CPU laptop handles a few thousand molecules and a few epochs comfortably (just more
@@ -312,27 +318,27 @@ flowchart LR
 1. Choose a writable output folder for all artifacts:
 
    ```bash
-   export MOLVAE_ART_DIR="$PWD/my_model"     # Windows PowerShell: $env:MOLVAE_ART_DIR = "$PWD\my_model"
+   export BATTERYGEN_ART_DIR="$PWD/my_model"     # Windows PowerShell: $env:BATTERYGEN_ART_DIR = "$PWD\my_model"
    ```
 
 2. Convert your SMILES into training data (this also builds the vocabulary and the property
    normalization statistics):
 
    ```bash
-   python -m molforge.generative.add_data --input mydata.smi --tag mydata --recompute-stats
+   python -m batterygen.generative.add_data --input mydata.smi --tag mydata --recompute-stats
    ```
 
 3. (Optional but recommended) Create an honest held-out validation split:
 
    ```bash
-   python -m molforge.generative.make_split
+   python -m batterygen.generative.make_split
    ```
 
 4. Train. The model checkpoints periodically and can be stopped and resumed at any time:
 
    ```bash
-   python -m molforge.generative.train --epochs 6 --batch 320       # lower --batch on small GPUs
-   python -m molforge.generative.train --resume                      # continue a stopped run
+   python -m batterygen.generative.train --epochs 6 --batch 320       # lower --batch on small GPUs
+   python -m batterygen.generative.train --resume                      # continue a stopped run
    ```
 
    The best checkpoint is saved as `best.pt` in your artifacts folder.
@@ -340,11 +346,11 @@ flowchart LR
 5. Check quality against standard generative metrics:
 
    ```bash
-   python -m molforge.generative.evaluate
+   python -m batterygen.generative.evaluate
    ```
 
 Your new model loads exactly like the pretrained one:
-`MolForge(ckpt="my_model/checkpoints/best.pt")`.
+`BatteryGen(ckpt="my_model/checkpoints/best.pt")`.
 
 ---
 
@@ -380,7 +386,7 @@ TARGET = TargetConfig(
 **Switch chemistry in one line.** Ready-made presets ship for `Zn`, `Li`, `Na`, and `K`:
 
 ```bash
-export MOLFORGE_TARGET=Li      # Windows PowerShell: $env:MOLFORGE_TARGET = "Li"
+export BATTERYGEN_TARGET=Li      # Windows PowerShell: $env:BATTERYGEN_TARGET = "Li"
 ```
 
 or edit the last line of `target.py` (`TARGET = PRESETS["Zn"]`). When you bring your own
@@ -405,13 +411,13 @@ flowchart LR
 ```
 
 1. **Provide your dataset.** Put a single CSV in a `data/` folder (the tools detect it
-   automatically), or pass `--csv your.csv`, or set the `MOLVAE_CE_CSV` environment variable.
+   automatically), or pass `--csv your.csv`, or set the `BATTERYGEN_CE_CSV` environment variable.
    The CSV columns must match the names in your `target.py` (Section 8). Then build the feature
    table (this runs xTB once per molecule and caches it, so re-runs are fast):
 
    ```bash
-   python -m molforge.predictive.features               # auto-detects the CSV in data/
-   # or:  python -m molforge.predictive.features --csv path/to/your.csv
+   python -m batterygen.predictive.features               # auto-detects the CSV in data/
+   # or:  python -m batterygen.predictive.features --csv path/to/your.csv
    # add --no-xtb to skip the physics features
    ```
 
@@ -420,20 +426,20 @@ flowchart LR
    the shortlist to `selected_features.json`:
 
    ```bash
-   python -m molforge.predictive.select
+   python -m batterygen.predictive.select
    ```
 
 3. **Tune hyperparameters with Optuna** (optional). It searches many settings and keeps the
    best, scoring on both random and scaffold splits for an honest estimate:
 
    ```bash
-   python -m molforge.predictive.tune
+   python -m batterygen.predictive.tune
    ```
 
 4. **Train and save** the final predictor on the shortlisted features:
 
    ```bash
-   python -m molforge.predictive.train
+   python -m batterygen.predictive.train
    ```
 
    The model is written to `<artifacts>/predictive/production_model.pkl`, and the run prints
@@ -444,9 +450,9 @@ cannot reliably predict values better than the best it has seen. The dependable 
 ceiling is to measure a promising candidate, add the measurement, and retrain:
 
 ```bash
-python -m molforge.predictive.features --append-smiles "<SMILES>" --append-value 98.5
-python -m molforge.predictive.select
-python -m molforge.predictive.train
+python -m batterygen.predictive.features --append-smiles "<SMILES>" --append-value 98.5
+python -m batterygen.predictive.select
+python -m batterygen.predictive.train
 ```
 
 ---
@@ -476,7 +482,7 @@ flowchart TB
 Basic run:
 
 ```bash
-python -m molforge.predictive.design --n 1200 --rounds 3 --shortlist 60 --top 30 --out candidates.csv
+python -m batterygen.predictive.design --n 1200 --rounds 3 --shortlist 60 --top 30 --out candidates.csv
 ```
 
 The output `candidates.csv` ranks candidates by predicted performance minus an uncertainty
@@ -487,17 +493,17 @@ Guide the search with plain English and add a language-model review of each cand
 the keys from Section 12):
 
 ```bash
-python -m molforge.predictive.design --prompt "small water-stable additive, molecular weight under 200" --llm
+python -m batterygen.predictive.design --prompt "small water-stable additive, molecular weight under 200" --llm
 ```
 
 Ground the explanation of the top candidate in your own literature and flag novelty against it
 (needs a knowledge base, see Section 11):
 
 ```bash
-python -m molforge.predictive.design --prompt "amide additive for the anode SEI" --llm --rag
+python -m batterygen.predictive.design --prompt "amide additive for the anode SEI" --llm --rag
 ```
 
-See `python -m molforge.predictive.design --help` for all options (round count, shortlist size,
+See `python -m batterygen.predictive.design --help` for all options (round count, shortlist size,
 uncertainty penalty `--lam`, a direction-aware `--min-target` filter, context overrides
 `--context "LogMolarRatio=-1.5"`, and more).
 
@@ -510,7 +516,7 @@ The optional knowledge base lets the pipeline ground its explanations in real pa
 text embeddings, so it needs the embedding key from Section 12.
 
 **Where the files live:** the knowledge base is stored under your artifacts folder at
-`<MOLVAE_ART_DIR>/predictive/kb/` (created automatically). You do not place files there by hand
+`<BATTERYGEN_ART_DIR>/predictive/kb/` (created automatically). You do not place files there by hand
 - you add them with the commands below, which read, chunk, and embed your text.
 
 **Add documents** (plain-text papers, abstracts, or your own notes). Use `--source` to label
@@ -518,17 +524,17 @@ where each came from so citations are meaningful:
 
 ```bash
 # add a text file (export a paper to .txt first):
-python -m molforge.predictive.rag --add paper.txt --source "Zhang 2024 JACS"
+python -m batterygen.predictive.rag --add paper.txt --source "Zhang 2024 JACS"
 
 # add a quick note directly:
-python -m molforge.predictive.rag --add-text "TFE additive raises CE to 99.4% by reshaping the SEI." --source "lab note"
+python -m batterygen.predictive.rag --add-text "TFE additive raises CE to 99.4% by reshaping the SEI." --source "lab note"
 ```
 
 **Inspect and search** the knowledge base:
 
 ```bash
-python -m molforge.predictive.rag --list                                # what is in the KB
-python -m molforge.predictive.rag --query "amide additives for the SEI" --k 5   # top 5 passages
+python -m batterygen.predictive.rag --list                                # what is in the KB
+python -m batterygen.predictive.rag --query "amide additives for the SEI" --k 5   # top 5 passages
 ```
 
 **Use it in the pipeline** by adding `--rag` to a design run (Section 10). The top candidate's
@@ -572,10 +578,10 @@ and skips the literature grounding).
 ## 13. Project layout
 
 The code is grouped into subpackages by purpose. Every module runs with
-`python -m molforge.<subpackage>.<module>`:
+`python -m batterygen.<subpackage>.<module>`:
 
 ```
-molforge/
+batterygen/
   core/         the model and data layer (config, data, model, infer, api, finetune, membership, llm)
   generative/   train and evaluate the generative model (train, preprocess, add_data, generate, ...)
   predictive/   the config-driven predictive model + inverse design:
@@ -594,7 +600,7 @@ molforge/
   data/         put your own CSV datasets here
 ```
 
-You normally interact through `python -m molforge.<module>` (Section 14) or the `MolForge`
+You normally interact through `python -m batterygen.<module>` (Section 14) or the `BatteryGen`
 Python class, not the files directly.
 
 ---
@@ -605,20 +611,20 @@ Each row shows the module form and the short console command created on install 
 
 | Module command | Short command | What it does |
 |---|---|---|
-| `python -m molforge.core.api` | `molforge` | Generate molecules from the command line. |
-| `python -m molforge.core.finetune` | `molforge-finetune` | Fine-tune the model on your own SMILES. |
-| `python -m molforge.generative.add_data` | `molforge-add-data` | Turn your SMILES into training data. |
-| `python -m molforge.generative.make_split` | `molforge-make-split` | Create a held-out validation split. |
-| `python -m molforge.generative.train` | `molforge-train` | Train the generative model. |
-| `python -m molforge.generative.evaluate` | `molforge-evaluate` | Benchmark generation quality. |
-| `python -m molforge.predictive.features` | `molforge-pred-features` | Build the predictive-model feature table. |
-| `python -m molforge.predictive.select` | `molforge-pred-select` | Shortlist features with RFE-CV. |
-| `python -m molforge.predictive.tune` | `molforge-pred-tune` | Optuna hyperparameter tuning. |
-| `python -m molforge.predictive.train` | `molforge-pred-train` | Train and save the predictive model. |
-| `python -m molforge.predictive.design` | `molforge-pred-design` | Run the full inverse-design pipeline. |
-| `python -m molforge.predictive.rag` | `molforge-pred-rag` | Manage the literature knowledge base. |
-| `python -m molforge.generative.{generate,search,report}` | `molforge-{generate,search,report}` | CLI generation, latent search, HTML report. |
-| `python -m molforge.electrolyte.electrolyte` etc. | `molforge-electrolyte`, `molforge-xtb-label`, `molforge-qm9`, `molforge-finetune-dft` | Electrolyte and quantum-grounding tools. |
+| `python -m batterygen.core.api` | `batterygen` | Generate molecules from the command line. |
+| `python -m batterygen.core.finetune` | `batterygen-finetune` | Fine-tune the model on your own SMILES. |
+| `python -m batterygen.generative.add_data` | `batterygen-add-data` | Turn your SMILES into training data. |
+| `python -m batterygen.generative.make_split` | `batterygen-make-split` | Create a held-out validation split. |
+| `python -m batterygen.generative.train` | `batterygen-train` | Train the generative model. |
+| `python -m batterygen.generative.evaluate` | `batterygen-evaluate` | Benchmark generation quality. |
+| `python -m batterygen.predictive.features` | `batterygen-pred-features` | Build the predictive-model feature table. |
+| `python -m batterygen.predictive.select` | `batterygen-pred-select` | Shortlist features with RFE-CV. |
+| `python -m batterygen.predictive.tune` | `batterygen-pred-tune` | Optuna hyperparameter tuning. |
+| `python -m batterygen.predictive.train` | `batterygen-pred-train` | Train and save the predictive model. |
+| `python -m batterygen.predictive.design` | `batterygen-pred-design` | Run the full inverse-design pipeline. |
+| `python -m batterygen.predictive.rag` | `batterygen-pred-rag` | Manage the literature knowledge base. |
+| `python -m batterygen.generative.{generate,search,report}` | `batterygen-{generate,search,report}` | CLI generation, latent search, HTML report. |
+| `python -m batterygen.electrolyte.electrolyte` etc. | `batterygen-electrolyte`, `batterygen-xtb-label`, `batterygen-qm9`, `batterygen-finetune-dft` | Electrolyte and quantum-grounding tools. |
 
 Every command supports `--help`.
 
@@ -626,18 +632,18 @@ Every command supports `--help`.
 
 ## 15. Troubleshooting
 
-- **`python -m molforge...` says "No module named molforge"** - run it from the folder that
-  contains the `molforge` package (its parent directory), or `pip install .` so the package is
+- **`python -m batterygen...` says "No module named batterygen"** - run it from the folder that
+  contains the `batterygen` package (its parent directory), or `pip install .` so the package is
   importable from anywhere.
-- **A short command like `molforge-train` is "not found"** - make sure the install finished
+- **A short command like `batterygen-train` is "not found"** - make sure the install finished
   (`pip install ".[full]"`) and that your environment is activated. The module form always
-  works: `python -m molforge.generative.train --help`.
-- **"weights not found"** - set `MOLVAE_ART_DIR` to the folder where the weights were
-  downloaded (Step 5), or pass `artifacts_dir=...` to `MolForge(...)`.
-- **Training, fine-tuning, or predictive steps cannot write output** - point `MOLVAE_ART_DIR`
+  works: `python -m batterygen.generative.train --help`.
+- **"weights not found"** - set `BATTERYGEN_ART_DIR` to the folder where the weights were
+  downloaded (Step 5), or pass `artifacts_dir=...` to `BatteryGen(...)`.
+- **Training, fine-tuning, or predictive steps cannot write output** - point `BATTERYGEN_ART_DIR`
   at a *writable* copy of the weights, not the read-only download cache (see the tip in Step 5).
 - **No dataset found** - put a single CSV in a `data/` folder, pass `--csv`, or set
-  `MOLVAE_CE_CSV` (Section 9).
+  `BATTERYGEN_CE_CSV` (Section 9).
 - **Out of memory on a GPU** - lower the batch size, e.g. `--batch 32`.
 - **xTB errors** - confirm xTB is installed and set the `XTB_EXE` environment variable to its
   executable, or build features with `--no-xtb` to skip the physics features.
@@ -650,5 +656,5 @@ Every command supports `--help`.
 Both the **code and the model weights** are released under **CC BY-NC 4.0** (Attribution,
 NonCommercial) - see the [LICENSE](LICENSE) file. The weights are derived from the Molport
 "All Stock" catalog, which is itself CC BY-NC 4.0, so the same terms apply: you must credit
-MolForge and Molport, and you may not use the project for commercial purposes. See the
-[Hugging Face model card](https://huggingface.co/NealKapadia/Molforge) for details.
+BatteryGen and Molport, and you may not use the project for commercial purposes. See the
+[Hugging Face model card](https://huggingface.co/NealKapadia/BatteryGen) for details.

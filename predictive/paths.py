@@ -5,7 +5,7 @@ generator's checkpoints and processed data.
 """
 from __future__ import annotations
 
-from molforge.core import config
+from batterygen.core import config
 
 PRED_DIR = config.CKPT_DIR.parent / "predictive"
 

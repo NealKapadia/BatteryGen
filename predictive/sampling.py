@@ -16,9 +16,9 @@ from typing import Dict, List
 import numpy as np
 import torch
 
-from molforge.core import config
-from molforge.core import data
-from molforge.predictive.target import TARGET
+from batterygen.core import config
+from batterygen.core import data
+from batterygen.predictive.target import TARGET
 
 
 def _resolve_ckpt(ckpt):

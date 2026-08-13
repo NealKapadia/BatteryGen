@@ -10,13 +10,13 @@ chosen cation system.
 The "source" one-hot lets us combine experimental (CALiSol) and MD-simulated (OEDB)
 data without conflating their different conductivity scales.
 
-  python molvae/electrolyte_data.py                      # build electrolyte_train.csv
-  python molvae/electrolyte.py --mode train --csv ...electrolyte_train.csv \
+  python -m batterygen.electrolyte.electrolyte_data                      # build electrolyte_train.csv
+  python -m batterygen.electrolyte.electrolyte --mode train --csv ...electrolyte_train.csv \
       --mix-col mix --cation-col cation --anion-smiles-col anion_smiles \
       --conc-col conc --temp-col temp --source-col source \
       --target-cols conductivity,coord_cat_anion,coord_cat_solvent --log-target
-  python molvae/electrolyte.py --mode screen --cation Mg --conc 1.0 --temp 298 --n 200
-  python molvae/electrolyte.py --mode demo
+  python -m batterygen.electrolyte.electrolyte --mode screen --cation Mg --conc 1.0 --temp 298 --n 200
+  python -m batterygen.electrolyte.electrolyte --mode demo
 """
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from molforge.core import config
+from batterygen.core import config
 
 
 CATIONS = ["Li", "Na", "K", "Rb", "Cs", "Mg", "Ca", "Sr", "Ba",
@@ -51,11 +51,11 @@ def _onehot(name, table, n):
 
 # --------------------------------------------------------------------------- VAE
 def get_vae(ckpt, allow_untrained=False):
-    from molforge.core import infer
+    from batterygen.core import infer
 
-    from molforge.core import model as M
+    from batterygen.core import model as M
 
-    from molforge.core import data as _data
+    from batterygen.core import data as _data
 
 
     device = config.get_device()
@@ -72,7 +72,7 @@ def get_vae(ckpt, allow_untrained=False):
 @torch.no_grad()
 def latents_for(net, vocab, smiles, device, batch=256):
     import selfies as sf
-    from molforge.core import data as _data
+    from batterygen.core import data as _data
 
 
     uniq = [s for s in dict.fromkeys(smiles) if s]
@@ -277,7 +277,7 @@ def screen(args):
     xm = torch.tensor(st["xm"], device=device); xs = torch.tensor(st["xs"], device=device)
     ym = np.asarray(st["ym"]); ys = np.asarray(st["ys"])
 
-    from molforge.generative import generate as G
+    from batterygen.generative import generate as G
 
     spec = json.loads(args.spec) if args.spec else {"MolWt": 110, "NumAromaticRings": 0}
     rows = G.generate(net_vae, vocab, spec, args.n, temperature=args.temperature,
@@ -288,7 +288,7 @@ def screen(args):
     if st["use_anion"] and args.anion:
         anion_lat = next(iter(latents_for(net_vae, vocab, [args.anion], device).values()), None)
 
-    from molforge.core.membership import MolportIndex
+    from batterygen.core.membership import MolportIndex
     index = MolportIndex()
     scored = []
     for smi in cand:
@@ -313,9 +313,9 @@ def screen(args):
 
 # ------------------------------------------------------------------------ demo
 def demo(args):
-    from molforge.core import data as _data
+    from batterygen.core import data as _data
 
-    from molforge.core import infer
+    from batterygen.core import infer
 
     print("DEMO: synthetic electrolyte data (validates the pipeline end-to-end).\n")
     net, vocab, _, device = get_vae(args.ckpt, allow_untrained=True)

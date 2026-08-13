@@ -1,9 +1,9 @@
 """Generate molecules from the trained conditional SELFIES-VAE.
 
-  python molvae/generate.py --n 20
-  python molvae/generate.py --n 20 --spec "{\"QED\":0.85,\"MolWt\":350}"
-  python molvae/generate.py --n 20 --prompt "small soluble drug-like molecule"
-  python molvae/generate.py --n 20 --spec "{\"QED\":0.85}" --molport-only
+  python -m batterygen.generative.generate --n 20
+  python -m batterygen.generative.generate --n 20 --spec "{\"QED\":0.85,\"MolWt\":350}"
+  python -m batterygen.generative.generate --n 20 --prompt "small soluble drug-like molecule"
+  python -m batterygen.generative.generate --n 20 --spec "{\"QED\":0.85}" --molport-only
 
 Every molecule is decoded from SELFIES (always syntactically valid), de-duplicated,
 scored with RDKit, and checked against the Molport membership index (the Molport-xxx
@@ -18,11 +18,11 @@ from typing import Dict, List
 
 import torch
 
-from molforge.core import config
+from batterygen.core import config
 
-from molforge.core import infer
+from batterygen.core import infer
 
-from molforge.core.membership import MolportIndex
+from batterygen.core.membership import MolportIndex
 
 
 def generate(net, vocab, spec: Dict[str, float], n: int, *, temperature: float,

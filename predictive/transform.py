@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from molforge.predictive.target import TARGET
+from batterygen.predictive.target import TARGET
 
 
 def forward(y):

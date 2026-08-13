@@ -10,7 +10,7 @@ out-of-fold R^2 (both in the original target space):
 Scaffold R^2 = honest generalization to novel chemistry; random R^2 = robustness. Skip this
 step to train on sensible defaults.
 
-Run:  python -m molforge.predictive.tune --trials 200 --scaffold_weight 0.3 --random_weight 0.7
+Run:  python -m batterygen.predictive.tune --trials 200 --scaffold_weight 0.3 --random_weight 0.7
 Output: <artifacts>/predictive/best_hparams.pkl  (+ an Optuna-history figure)
 """
 import warnings; warnings.filterwarnings("ignore")
@@ -20,8 +20,8 @@ import json
 import numpy as np
 import joblib
 
-from molforge.predictive.target import TARGET
-from molforge.predictive import paths, transform
+from batterygen.predictive.target import TARGET
+from batterygen.predictive import paths, transform
 
 RS = 42
 
@@ -69,7 +69,7 @@ def main():
     print("=" * 70)
     C = joblib.load(paths.FEATURE_CACHE)
     if not paths.SELECTED.exists():
-        raise SystemExit("No feature shortlist. Run: python -m molforge.predictive.select")
+        raise SystemExit("No feature shortlist. Run: python -m batterygen.predictive.select")
     idx, sel = _selected_columns(C)
     keep = C["cov"] <= args.cov
     X = C["X"].values[keep][:, idx]

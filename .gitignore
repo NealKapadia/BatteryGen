@@ -11,8 +11,8 @@
 # Model weights & artifacts — host on Hugging Face, not git (>100 MB each).
 # ---------------------------------------------------------------------------
 artifacts/
-../molvae_artifacts/
-molvae_artifacts/
+../batterygen_artifacts/
+batterygen_artifacts/
 *.pt
 *.pth
 *.ckpt

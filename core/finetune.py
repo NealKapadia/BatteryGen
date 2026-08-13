@@ -5,7 +5,7 @@ Unlike ``train.py`` (which continues training over the original preprocessed Mol
 shards), this script needs **none of those shards**. It builds a small in-memory
 training set directly from a plain SMILES file you supply, loads the pretrained
 weights (``best.pt`` from Hugging Face), trains a few epochs, and writes a new
-checkpoint you can load straight back into ``MolForge``.
+checkpoint you can load straight back into ``BatteryGen``.
 
 So it runs from a bare ``pip install`` + the Hugging Face artifacts:
     artifacts/processed/{vocab.json, descriptor_stats.json}   (small, on HF)
@@ -17,16 +17,16 @@ slow; pass --device cuda if you have an NVIDIA GPU.
 Quick start
 -----------
     # point at a WRITABLE artifacts dir that holds the HF download
-    #   (Windows)  $env:MOLVAE_ART_DIR = "C:\\path\\to\\artifacts"
-    #   (bash)     export MOLVAE_ART_DIR=/path/to/artifacts
+    #   (Windows)  $env:BATTERYGEN_ART_DIR = "C:\\path\\to\\artifacts"
+    #   (bash)     export BATTERYGEN_ART_DIR=/path/to/artifacts
 
-    python -m molforge.finetune --input my_molecules.smi --epochs 3 --device cuda
-    python -m molforge.finetune --input solvents.csv --smiles-col 0 --header --delim ,
+    python -m batterygen.finetune --input my_molecules.smi --epochs 3 --device cuda
+    python -m batterygen.finetune --input solvents.csv --smiles-col 0 --header --delim ,
 
 Then use the result:
-    from molforge import MolForge
-    mf = MolForge(device="cpu", ckpt="<MOLVAE_ART_DIR>/checkpoints/finetuned.pt")
-    mf.generate(20)
+    from batterygen import BatteryGen
+    bg = BatteryGen(device="cpu", ckpt="<BATTERYGEN_ART_DIR>/checkpoints/finetuned.pt")
+    bg.generate(20)
 """
 from __future__ import annotations
 
@@ -39,13 +39,13 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-from molforge.core import config
+from batterygen.core import config
 
-from molforge.core import data
+from batterygen.core import data
 
-from molforge.core import infer
+from batterygen.core import infer
 
-from molforge.core import model as M
+from batterygen.core import model as M
 
 
 try:  # optional pretty progress; never a hard dependency
@@ -136,7 +136,7 @@ def sample_validity(net, vocab, device, n=200):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Fine-tune the MolForge SELFIES-VAE on your own SMILES.")
+    ap = argparse.ArgumentParser(description="Fine-tune the BatteryGen SELFIES-VAE on your own SMILES.")
     ap.add_argument("--input", nargs="+", required=True, help="SMILES file(s): .smi/.txt/.csv[.gz]")
     ap.add_argument("--smiles-col", type=int, default=0, help="column index of the SMILES (default 0)")
     ap.add_argument("--delim", default=None, help="field delimiter (default: any whitespace)")
@@ -239,7 +239,7 @@ def main():
     rate, examples = sample_validity(net, vocab, device)
     print(f"Post-finetune sample validity: {rate:.3f}  e.g. {examples}")
 
-    # Save a checkpoint compatible with infer.load_model / MolForge.
+    # Save a checkpoint compatible with infer.load_model / BatteryGen.
     out = Path(args.out)
     if not out.is_absolute() and out.parent == Path("."):
         config.ensure_dirs()
@@ -262,7 +262,7 @@ def main():
         out,
     )
     print(f"\nDone in {(time.time()-t0)/60:.1f} min. Saved -> {out}")
-    print(f"Use it:  MolForge(ckpt=r\"{out}\")")
+    print(f"Use it:  BatteryGen(ckpt=r\"{out}\")")
 
 
 if __name__ == "__main__":

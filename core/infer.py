@@ -10,11 +10,11 @@ from typing import Dict, List, Optional
 import numpy as np
 import torch
 
-from molforge.core import config
+from batterygen.core import config
 
-from molforge.core import data
+from batterygen.core import data
 
-from molforge.core import model as M
+from batterygen.core import model as M
 
 
 
@@ -23,7 +23,7 @@ def load_model(ckpt_path: Optional[str] = None, device=None):
     vocab = data.Vocab.load()
     path = Path(ckpt_path) if ckpt_path else (config.CKPT_DIR / "latest.pt")
     if not path.exists():
-        raise SystemExit(f"No checkpoint at {path}. Train first: python molvae/train.py")
+        raise SystemExit(f"No checkpoint at {path}. Train first: python -m batterygen.predictive.train")
     ck = torch.load(path, map_location=device)
     net = M.SelfiesVAE(vocab_size=len(vocab), pad_idx=vocab.pad, unk_idx=vocab.unk,
                        **ck.get("hparams", {})).to(device)
@@ -37,7 +37,7 @@ def resolve_spec(spec: Optional[Dict], prompt: Optional[str]) -> Dict[str, float
     merged: Dict[str, float] = {}
     if prompt:
         try:
-            from molforge.core import llm
+            from batterygen.core import llm
 
 
             merged.update(llm.nl_to_spec(prompt))

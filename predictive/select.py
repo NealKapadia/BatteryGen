@@ -13,7 +13,7 @@ TARGET controls it:
   n_features   None -> RFE-CV picks the count automatically; an int forces the top-K.
   pin_context  True -> the context columns are always kept, regardless of RFE.
 
-Run:  python -m molforge.predictive.select
+Run:  python -m batterygen.predictive.select
 Output: <artifacts>/predictive/selected_features.json  (+ a CV-curve figure)
 """
 from __future__ import annotations
@@ -24,8 +24,8 @@ import json
 import numpy as np
 import joblib
 
-from molforge.predictive.target import TARGET
-from molforge.predictive import paths, transform
+from batterygen.predictive.target import TARGET
+from batterygen.predictive import paths, transform
 
 
 def _importance_topk(X, y, names, k):

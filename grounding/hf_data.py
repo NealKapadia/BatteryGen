@@ -10,8 +10,8 @@ Requires `pip install datasets` (safe; pure-python + pyarrow). Streaming avoids
 downloading all 124M at once. Canonicalization is parallelized across CPU cores.
 
   pip install datasets
-  python molvae/hf_data.py --mode sample --max 2000000
-  python molvae/hf_data.py --mode bloom  --max 20000000
+  python -m batterygen.grounding.hf_data --mode sample --max 2000000
+  python -m batterygen.grounding.hf_data --mode bloom  --max 20000000
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ import argparse
 
 from tqdm import tqdm
 
-from molforge.core import config
+from batterygen.core import config
 
 
 HF_NAME = "hheiden/PubChem-124M-SMILES-SELFIES-InChI-IUPAC"
@@ -42,7 +42,7 @@ def _stream_smiles(max_n: int):
 
 
 def _canon(smi):
-    from molforge.core import data  # rdkit loaded on import
+    from batterygen.core import data  # rdkit loaded on import
 
     return data.canonical_smiles(smi)
 
@@ -52,13 +52,13 @@ def sample(max_n: int, out: str):
     with open(out, "w", encoding="utf-8") as f:
         for smi in tqdm(_stream_smiles(max_n), total=max_n or None, desc="PubChem", unit="mol"):
             f.write(smi + "\n"); n += 1
-    print(f"Wrote {n:,} SMILES -> {out}\nAdd to training:  python molvae/add_data.py "
+    print(f"Wrote {n:,} SMILES -> {out}\nAdd to training:  python -m batterygen.generative.add_data "
           f"--input {out} --tag pubchem --dedup")
 
 
 def build_bloom(max_n: int, out: str, workers: int, capacity: int):
     import multiprocessing as mp
-    from molforge.core.membership import BloomFilter
+    from batterygen.core.membership import BloomFilter
 
     bloom = BloomFilter(max(capacity, max_n or capacity), 1e-4)
     n = 0

@@ -5,7 +5,7 @@ without touching call sites. Endpoints/keys are read from the environment (.env)
 If the ``openai`` SDK or the keys are missing, everything falls back to a
 dependency-free keyword parser, so the rest of the pipeline never breaks.
 
-  from molforge.core.llm import nl_to_spec
+  from batterygen.core.llm import nl_to_spec
   nl_to_spec("a small, very soluble, drug-like molecule with few rotatable bonds")
   # -> {"MolWt": 250, "MolLogP": 0.5, "TPSA": 90, "QED": 0.85, "NumRotatableBonds": 2}
 """
@@ -17,11 +17,11 @@ import re
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
-from molforge.core import config
+from batterygen.core import config
 
 
 # Load keys from a .env if python-dotenv is available (optional). Look at the package-root
-# .env (molforge/.env) first, then any .env discovered from the current working directory.
+# .env (batterygen/.env) first, then any .env discovered from the current working directory.
 # load_dotenv never overrides variables already set in the real environment.
 try:  # pragma: no cover
     from pathlib import Path as _Path

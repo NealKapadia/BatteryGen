@@ -9,7 +9,7 @@ on genuinely unseen scaffolds.
 Writes split_val.npy (bool, one per molecule, in shard order) which MolDataset uses
 automatically when present.
 
-  python molvae/make_split.py --val-frac 0.02
+  python -m batterygen.generative.make_split --val-frac 0.02
 """
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ import json
 import numpy as np
 from tqdm import tqdm
 
-from molforge.core import config
+from batterygen.core import config
 
 
 

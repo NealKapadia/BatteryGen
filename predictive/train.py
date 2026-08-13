@@ -10,7 +10,7 @@ ensemble-std uncertainty. Reports honest out-of-fold random-split R^2 and scaffo
 `predict(bundle, smiles, context, compute_xtb=...)` is the scoring backbone the generator
 loop calls: returns per molecule -> {pred, unc, domain_sim, xtb_homo}.
 
-Run:  python -m molforge.predictive.train [--gpu]
+Run:  python -m batterygen.predictive.train [--gpu]
 Output: <artifacts>/predictive/production_model.pkl (+ a feature-importance figure)
 """
 import warnings; warnings.filterwarnings("ignore")
@@ -20,9 +20,9 @@ import json
 import numpy as np
 import joblib
 
-from molforge.predictive.target import TARGET
-from molforge.predictive import paths, transform
-from molforge.predictive import features as F
+from batterygen.predictive.target import TARGET
+from batterygen.predictive import paths, transform
+from batterygen.predictive import features as F
 
 RS = 42
 
@@ -60,7 +60,7 @@ def _oof_blend_r2(X, y, g, xkw, etkw, et_w, splitter, use_groups):
 def _load_selected(C):
     names = list(C["feature_order"])
     if not paths.SELECTED.exists():
-        raise SystemExit("No feature shortlist. Run: python -m molforge.predictive.select")
+        raise SystemExit("No feature shortlist. Run: python -m batterygen.predictive.select")
     with open(paths.SELECTED, encoding="utf-8") as f:
         sel = json.load(f)["features"]
     sel = [n for n in names if n in sel]        # canonical order
@@ -158,9 +158,9 @@ def _plot_importance(xg, names):
 def load_production():
     if not paths.MODEL.exists():
         raise SystemExit("No production model. Run: "
-                         "python -m molforge.predictive.features && "
-                         "python -m molforge.predictive.select && "
-                         "python -m molforge.predictive.train")
+                         "python -m batterygen.predictive.features && "
+                         "python -m batterygen.predictive.select && "
+                         "python -m batterygen.predictive.train")
     return joblib.load(paths.MODEL)
 
 
@@ -177,7 +177,7 @@ def _feature_rows(bundle, smiles_list, context, compute_xtb, xtb_cache):
     if need_xtb:
         todo = [s for s in dict.fromkeys(smiles_list) if s not in (xtb_cache or {})]
         if todo:
-            from molforge.grounding import xtb_label
+            from batterygen.grounding import xtb_label
             env = dict(os.environ); env.setdefault("OMP_NUM_THREADS", "4")
             scratch = Path(tempfile.mkdtemp(prefix="xtb_pred_"))
             for s in todo:

@@ -13,10 +13,10 @@ Runs, in order (each stage resumable — re-running skips finished stages):
 Run AFTER the base run finishes (it needs latest.pt). GPU is free by then, so no
 contention.
 
-  python molvae/pipeline.py                       # do everything
-  python molvae/pipeline.py --dry-run             # print the plan
-  python molvae/pipeline.py --only electrolyte_train
-  python molvae/pipeline.py --from ground         # resume from a stage
+  python -m batterygen.generative.pipeline                       # do everything
+  python -m batterygen.generative.pipeline --dry-run             # print the plan
+  python -m batterygen.generative.pipeline --only electrolyte_train
+  python -m batterygen.generative.pipeline --from ground         # resume from a stage
 """
 from __future__ import annotations
 
@@ -27,16 +27,16 @@ import subprocess
 import sys
 from pathlib import Path
 
-from molforge.core import config
+from batterygen.core import config
 
 
-MOLVAE = Path(__file__).resolve().parent
+BATTERYGEN = Path(__file__).resolve().parent
 PY = sys.executable
 STATE = config.ART_DIR / "pipeline_state.json"
 
 
 def _script(name):
-    return str(MOLVAE / name)
+    return str(BATTERYGEN / name)
 
 
 def _run(parts, desc, dry):
@@ -47,13 +47,13 @@ def _run(parts, desc, dry):
         return
     if subprocess.run(cmd).returncode != 0:
         raise SystemExit(f"\n[pipeline] stage FAILED: {desc}. Fix and re-run "
-                         f"`python molvae/pipeline.py --from <stage>`.")
+                         f"`python -m batterygen.generative.pipeline --from <stage>`.")
 
 
 def _need_vae():
     if not (config.CKPT_DIR / "latest.pt").exists():
         raise SystemExit("No latest.pt — finish base training first "
-                         "(python molvae/train.py --epochs 12 --batch 320).")
+                         "(python -m batterygen.generative.train --epochs 12 --batch 320).")
 
 
 # --------------------------------------------------------------------------- #
@@ -199,8 +199,8 @@ def main():
             STATE.write_text(json.dumps(state, indent=2))
 
     if not a.dry_run:
-        print("\n✅ pipeline complete. Try the designer:  python molvae/app.py")
-        print("   screen electrolytes:  python molvae/electrolyte.py --mode screen --cation Li --source oedb")
+        print("\n✅ pipeline complete. Try the designer:  python -m batterygen.predictive.design")
+        print("   screen electrolytes:  python -m batterygen.electrolyte.electrolyte --mode screen --cation Li --source oedb")
         print("   (conductivity model has data for Li/Na/K; add data for Mg/Zn/etc. to screen those.)")
 
 

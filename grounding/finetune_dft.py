@@ -5,10 +5,10 @@ from the VAE latent. Optionally the encoder/decoder are lightly fine-tuned so th
 latent space *organizes* by the DFT property. You can then generate molecules
 toward an xTB target via latent optimization with that head.
 
-  python molvae/xtb_label.py --n 400                 # make labels first
-  python molvae/finetune_dft.py --target gap          # train the gap head
-  python molvae/finetune_dft.py --target gap --finetune-encoder
-  python molvae/finetune_dft.py --generate "{\"gap\":3.5}" --n 10 --verify
+  python -m batterygen.grounding.xtb_label --n 400                 # make labels first
+  python -m batterygen.grounding.finetune_dft --target gap          # train the gap head
+  python -m batterygen.grounding.finetune_dft --target gap --finetune-encoder
+  python -m batterygen.grounding.finetune_dft --generate "{\"gap\":3.5}" --n 10 --verify
 """
 from __future__ import annotations
 
@@ -23,13 +23,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from molforge.core import config
+from batterygen.core import config
 
-from molforge.core import data
+from batterygen.core import data
 
-from molforge.core import infer
+from batterygen.core import infer
 
-from molforge.core import model as M
+from batterygen.core import model as M
 
 
 DFT_CKPT = config.CKPT_DIR / "dft_latest.pt"
@@ -213,7 +213,7 @@ def generate(args):
     with torch.no_grad():
         seqs = net.sample(z.size(0), cond, vocab.bos, vocab.eos,
                           temperature=args.temperature, z=z.detach(), device=device)
-    from molforge.core.membership import MolportIndex
+    from batterygen.core.membership import MolportIndex
 
     index = MolportIndex()
     rows, seen = [], set()
@@ -229,7 +229,7 @@ def generate(args):
     verified = {}
     if args.verify and rows:
         import tempfile
-        from molforge.grounding import xtb_label
+        from batterygen.grounding import xtb_label
 
 
         scratch = Path(tempfile.mkdtemp(prefix="xtbv_"))

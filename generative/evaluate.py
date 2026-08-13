@@ -9,7 +9,7 @@ Reports, on the held-out (scaffold) validation set + on prior samples:
 High reconstruction/property scores on held-out scaffolds + high novelty/diversity
 = generalization. High train scores but poor held-out = memorization.
 
-  python molvae/evaluate.py --n 3000 --gen 3000
+  python -m batterygen.generative.evaluate --n 3000 --gen 3000
 """
 from __future__ import annotations
 
@@ -21,13 +21,13 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from molforge.core import config
+from batterygen.core import config
 
-from molforge.core import data
+from batterygen.core import data
 
-from molforge.core import infer
+from batterygen.core import infer
 
-from molforge.core.membership import MolportIndex
+from batterygen.core.membership import MolportIndex
 
 
 @torch.no_grad()
@@ -139,7 +139,7 @@ def print_benchmark_table(gen: dict):
     for name, vals in _PAPER_TABLE.items():
         print(f"{name:<16}" + "".join(f"{v:>17}" for v in vals))
     print("-" * len(hdr))
-    print(f"{'OURS (molvae)':<16}" + "".join(
+    print(f"{'OURS (batterygen)':<16}" + "".join(
         f"{('n/a' if v is None else f'{v:.3f}'):>17}" for v in ours))
     print("\nNote: paper numbers are on a 1M *electrolyte* dataset. Compare fairly AFTER "
           "electrolyte specialization (add_data.py). Novelty(PubChem) needs --pubchem-bloom.")
@@ -163,7 +163,7 @@ def main():
     args = ap.parse_args()
 
     if args.build_pubchem_from:
-        from molforge.core.membership import BloomFilter
+        from batterygen.core.membership import BloomFilter
         from pathlib import Path
         n = 0
         bloom = BloomFilter(120_000_000, 1e-4)  # PubChem-scale
@@ -181,7 +181,7 @@ def main():
     pubchem_bloom = None
     bloom_path = Path(args.pubchem_bloom) if args.pubchem_bloom else (config.MEMBER_DIR / "pubchem.bloom")
     if bloom_path.exists():
-        from molforge.core.membership import BloomFilter
+        from batterygen.core.membership import BloomFilter
         pubchem_bloom = BloomFilter.load(bloom_path)
         print(f"Using PubChem bloom: {bloom_path.name}")
 

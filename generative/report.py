@@ -6,9 +6,9 @@ generated-vs-data property distributions, the 6-metric benchmark table vs the
 ElectrolyteGPT paper, and (optionally) a latent-space PCA. Purely from saved
 artifacts, so it never needs the GPU.
 
-  python molvae/evaluate.py            # first, to produce eval_report.json
-  python molvae/report.py              # -> molvae_artifacts/report.html
-  python molvae/report.py --latent     # also embed a latent-space PCA (uses the model)
+  python -m batterygen.generative.evaluate            # first, to produce eval_report.json
+  python -m batterygen.generative.report              # -> batterygen_artifacts/report.html
+  python -m batterygen.generative.report --latent     # also embed a latent-space PCA (uses the model)
 """
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from molforge.core import config
+from batterygen.core import config
 
 
 PAPER = {
@@ -111,7 +111,7 @@ def benchmark_table(ev):
     head = "".join(f"<th>{c}</th>" for c in COLS)
     return (f"<h3>Benchmark vs ElectrolyteGPT (JACS Au 2026, Table 1)</h3>"
             f"<table class='bm'><tr><th>Model</th>{head}</tr>{rows}"
-            f"<tr class='ours'><td>OURS (molvae)</td>{ours_cells}</tr></table>"
+            f"<tr class='ours'><td>OURS (batterygen)</td>{ours_cells}</tr></table>"
             "<p class='note'>Paper numbers are on a 1M <i>electrolyte</i> dataset; compare fairly "
             "after electrolyte specialization (add_data.py). Similarity=mean pairwise Tanimoto, "
             "Diversity=1−Similarity.</p>")
@@ -120,9 +120,9 @@ def benchmark_table(ev):
 def latent_pca():
     import numpy as np
     import torch
-    from molforge.core import data as _data
+    from batterygen.core import data as _data
 
-    from molforge.core import infer
+    from batterygen.core import infer
 
     net, vocab, _, device = infer.load_model(None, device="cpu")
     ds = _data.MolDataset("val")
@@ -153,21 +153,21 @@ def main():
     args = ap.parse_args()
 
     ev = _load_eval()
-    parts = ["<h1>molvae — training &amp; evaluation report</h1>", training_curves()]
+    parts = ["<h1>batterygen — training &amp; evaluation report</h1>", training_curves()]
     if ev:
         parts += [benchmark_table(ev), property_r2(ev), property_dist(ev),
                   f"<p>Reconstruction on {ev.get('split','?')} split: "
                   f"exact {ev['reconstruction']['exact_recon_rate']:.1%}, "
                   f"token acc {ev['reconstruction']['token_acc']:.1%}.</p>"]
     else:
-        parts.append("<p><i>No eval_report.json — run <code>python molvae/evaluate.py</code> first.</i></p>")
+        parts.append("<p><i>No eval_report.json — run <code>python -m batterygen.generative.evaluate</code> first.</i></p>")
     if args.latent:
         try:
             parts.append(latent_pca())
         except Exception as e:
             parts.append(f"<p><i>latent PCA skipped: {e}</i></p>")
 
-    html = ("<!doctype html><meta charset='utf-8'><title>molvae report</title>"
+    html = ("<!doctype html><meta charset='utf-8'><title>batterygen report</title>"
             "<style>body{font:14px system-ui;margin:32px;max-width:1000px}"
             "img{max-width:100%;border:1px solid #ddd;border-radius:6px;margin:6px 0}"
             "table.bm{border-collapse:collapse;margin:8px 0}.bm td,.bm th{border:1px solid #ccc;padding:4px 9px;text-align:center}"

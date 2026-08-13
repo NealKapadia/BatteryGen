@@ -6,9 +6,9 @@ robust alphabet so no vocab-building pass is needed. Output is written per input
 chunk (resumable: existing shards are skipped unless --force).
 
 Usage:
-    python molvae/preprocess.py --limit 50000      # quick subset
-    python molvae/preprocess.py                     # full catalog
-    python molvae/preprocess.py --shards 0 1        # only the first two chunks
+    python -m batterygen.generative.preprocess --limit 50000      # quick subset
+    python -m batterygen.generative.preprocess                     # full catalog
+    python -m batterygen.generative.preprocess --shards 0 1        # only the first two chunks
 """
 from __future__ import annotations
 
@@ -22,11 +22,11 @@ from typing import List
 import numpy as np
 from tqdm import tqdm
 
-from molforge.core import config
+from batterygen.core import config
 
-from molforge.core import data
+from batterygen.core import data
 
-from molforge.core import membership
+from batterygen.core import membership
 
 
 # Worker-global vocab (loaded once per process by the Pool initializer).
@@ -35,14 +35,14 @@ _VOCAB = None
 
 def _init_worker():
     global _VOCAB
-    from molforge.core import data as _d  # re-import in spawned process
+    from batterygen.core import data as _d  # re-import in spawned process
 
     _VOCAB = _d.Vocab.load()
 
 
 def _worker(args):
     smiles, mid = args
-    from molforge.core import data as _d
+    from batterygen.core import data as _d
 
 
     return _d.process_record(smiles, mid, _VOCAB)

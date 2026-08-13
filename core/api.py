@@ -1,30 +1,30 @@
 """
-molforge — a small public API for the MolForge generative molecule model.
+batterygen — a small public API for the BatteryGen generative molecule model.
 ========================================================================
 Load the pretrained SELFIES-VAE and generate / encode / decode / score molecules on
 your own CPU or GPU. This is the friendly facade over the internal modules
 (config/data/model/infer); it does not require the web app or any Azure keys.
 
 What you need to run it locally:
-  - this `molvae/` folder (code)
+  - this `batterygen/` folder (code)
   - the artifacts bundle:  processed/{vocab.json, descriptor_stats.json, meta.json}
                            checkpoints/best.pt
-    Point to it with MOLVAE_ART_DIR, or pass artifacts_dir=... to MolForge().
+    Point to it with BATTERYGEN_ART_DIR, or pass artifacts_dir=... to BatteryGen().
 
 Quick start
 -----------
-    from molforge import MolForge
-    mf = MolForge(device="cpu")                 # or "cuda"
-    mf.generate(10)                             # 10 valid, novel SMILES
-    mf.generate(5, spec={"MolWt": 250, "QED": 0.8})   # property-targeted
-    mf.properties("OCCN(CCO)CCO")              # RDKit descriptors
-    z = mf.encode("CCO"); mf.decode(z)          # latent round-trip
+    from batterygen import BatteryGen
+    bg = BatteryGen(device="cpu")                 # or "cuda"
+    bg.generate(10)                             # 10 valid, novel SMILES
+    bg.generate(5, spec={"MolWt": 250, "QED": 0.8})   # property-targeted
+    bg.properties("OCCN(CCO)CCO")              # RDKit descriptors
+    z = bg.encode("CCO"); bg.decode(z)          # latent round-trip
 
 CLI
 ---
-    python molforge.py --n 20 --temperature 0.9
-    python molforge.py --n 10 --spec '{"MolWt":300,"NumAromaticRings":1}'
-    python molforge.py --n 10 --device cuda --out molecules.csv
+    python batterygen.py --n 20 --temperature 0.9
+    python batterygen.py --n 10 --spec '{"MolWt":300,"NumAromaticRings":1}'
+    python batterygen.py --n 10 --device cuda --out molecules.csv
 """
 from __future__ import annotations
 
@@ -37,19 +37,19 @@ import numpy as np
 import torch
 
 
-class MolForge:
+class BatteryGen:
     """Pretrained generative molecule model. ~100% valid SELFIES decoding."""
 
     def __init__(self, ckpt: Optional[str] = None, device: str = "cpu",
                  artifacts_dir: Optional[str] = None):
         if artifacts_dir:
-            os.environ["MOLVAE_ART_DIR"] = artifacts_dir
-        from molforge.core import config
+            os.environ["BATTERYGEN_ART_DIR"] = artifacts_dir
+        from batterygen.core import config
 
-        from molforge.core import infer
+        from batterygen.core import infer
 
         self._config, self._infer = config, infer
-        from molforge.core import data
+        from batterygen.core import data
 
         self._data = data
         ckpt = ckpt or str(config.CKPT_DIR / "best.pt")
@@ -129,7 +129,7 @@ class MolForge:
 
 
 def _main():
-    ap = argparse.ArgumentParser(description="MolForge generative model — local CLI")
+    ap = argparse.ArgumentParser(description="BatteryGen generative model — local CLI")
     ap.add_argument("--n", type=int, default=10)
     ap.add_argument("--spec", type=str, default=None, help='JSON property targets, e.g. {"MolWt":300}')
     ap.add_argument("--temperature", type=float, default=0.9)
@@ -138,10 +138,10 @@ def _main():
     ap.add_argument("--artifacts-dir", default=None)
     ap.add_argument("--out", default=None, help="optional CSV path")
     args = ap.parse_args()
-    mf = MolForge(ckpt=args.ckpt, device=args.device, artifacts_dir=args.artifacts_dir)
+    bg = BatteryGen(ckpt=args.ckpt, device=args.device, artifacts_dir=args.artifacts_dir)
     spec = json.loads(args.spec) if args.spec else None
-    rows = mf.generate(args.n, spec=spec, temperature=args.temperature, with_properties=True)
-    cols = ["smiles"] + mf.props
+    rows = bg.generate(args.n, spec=spec, temperature=args.temperature, with_properties=True)
+    cols = ["smiles"] + bg.props
     print("\t".join(cols))
     for r in rows:
         print("\t".join(str(r.get(c, "")) for c in cols))

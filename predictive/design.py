@@ -13,7 +13,7 @@ Two-stage scoring keeps it tractable on CPU:
   3. TRIAGE   (optional --llm) synthesizability / stability / mechanism assessment + a
               frontier-model judge re-rank; drop candidates flagged with TARGET.fatal_flag.
 
-Run:  python -m molforge.predictive.design --n 1200 --rounds 3 --shortlist 60 --top 30 --llm
+Run:  python -m batterygen.predictive.design --n 1200 --rounds 3 --shortlist 60 --top 30 --llm
 """
 from __future__ import annotations
 
@@ -26,10 +26,10 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from molforge.core import config
-from molforge.core import infer
-from molforge.predictive.target import TARGET
-from molforge.predictive import train, features, design_llm, sampling
+from batterygen.core import config
+from batterygen.core import infer
+from batterygen.predictive.target import TARGET
+from batterygen.predictive import train, features, design_llm, sampling
 
 try:  # Windows consoles are cp1252 - LLM text has unicode (arrows, superscripts, etc.)
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -208,7 +208,7 @@ def main():
         ranked = ml_ranked[:args.top]
 
     # ---- output ----
-    from molforge.core.membership import MolportIndex
+    from batterygen.core.membership import MolportIndex
     index = MolportIndex()
     lo, hi = bundle["y_range"]
     pcol = "pred_" + (re.sub(r"\W+", "_", tname).strip("_") or "value")
@@ -218,7 +218,7 @@ def main():
 
     rag_ctx = {}
     if args.rag:
-        from molforge.predictive import rag
+        from batterygen.predictive import rag
         print("\nRAG: scoring literature novelty against the KB ...")
         for smi, o in ranked:
             ctx, top = rag.context_for(smi, assess.get(smi, {}).get("mechanism", ""))

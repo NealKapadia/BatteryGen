@@ -9,8 +9,8 @@ re-finalizes membership + meta over old+new shards. Then keep training with
 By default the descriptor normalization is KEPT (so an already-trained model's
 conditioning stays calibrated); pass --recompute-stats only for a fresh model.
 
-  python molvae/add_data.py --input zinc_tranche1.smi zinc_tranche2.smi --tag zinc
-  python molvae/add_data.py --input solvents.csv --tag solvent --delim , --smiles-col 0 --header
+  python -m batterygen.generative.add_data --input zinc_tranche1.smi zinc_tranche2.smi --tag zinc
+  python -m batterygen.generative.add_data --input solvents.csv --tag solvent --delim , --smiles-col 0 --header
 """
 from __future__ import annotations
 
@@ -20,11 +20,11 @@ import gzip
 import json
 from pathlib import Path
 
-from molforge.core import config
+from batterygen.core import config
 
-from molforge.core import data
+from batterygen.core import data
 
-from molforge.generative import preprocess
+from batterygen.generative import preprocess
 
 
 
@@ -120,7 +120,7 @@ def main():
 
     dedup = None
     if args.dedup:
-        from molforge.core.membership import MolportIndex
+        from batterygen.core.membership import MolportIndex
         _idx = MolportIndex()
         if _idx.available:
             dedup = lambda c: _idx.contains(c, already_canonical=True)
@@ -160,7 +160,7 @@ def main():
         print("Removed stale split_val.npy — re-run make_split.py if you want a scaffold split.")
 
     print(f"\nAdded {len(new_shards)} shard(s). Continue pre-training with:")
-    print("  python molvae/train.py --resume --batch 320")
+    print("  python -m batterygen.generative.train --resume --batch 320")
 
 
 if __name__ == "__main__":

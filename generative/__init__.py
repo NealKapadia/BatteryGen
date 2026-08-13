@@ -1,1 +1,1 @@
-"""MolForge generative modules. Imported via the package; see molforge/__init__.py."""
+"""BatteryGen generative modules. Imported via the package; see batterygen/__init__.py."""

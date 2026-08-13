@@ -5,10 +5,10 @@ QM9 is the gold-standard quantum-chemistry benchmark: B3LYP/6-31G(2df,p) DFT
 properties for ~134k molecules. We export the chemically useful ones so the VAE's
 latent gets grounded in *real* DFT, far better than xTB-on-a-subset.
 
-  python molvae/qm9.py                      # download via PyG, write qm9_labels.csv
-  python molvae/qm9.py --max 50000          # subset
+  python -m batterygen.grounding.qm9                      # download via PyG, write qm9_labels.csv
+  python -m batterygen.grounding.qm9 --max 50000          # subset
 then:
-  python molvae/finetune_dft.py --target homo,lumo,gap,dipole --labels molvae_artifacts/dft/qm9_labels.csv
+  python -m batterygen.grounding.finetune_dft --target homo,lumo,gap,dipole --labels batterygen_artifacts/dft/qm9_labels.csv
 
 Units follow PyG's QM9 (orbital energies in eV, dipole in Debye). If the PyG
 download fails, point --raw-csv at a gdb9 properties CSV (with a 'smiles' column).
@@ -19,7 +19,7 @@ import argparse
 import csv
 from pathlib import Path
 
-from molforge.core import config
+from batterygen.core import config
 
 
 # PyG QM9 y-column order -> our names (first 12 are the chemically relevant ones).
@@ -98,7 +98,7 @@ def main():
         w.writerows(rows)
     print(f"Wrote {len(rows):,} QM9 labels -> {args.out}")
     print(f"Columns: {fields}")
-    print("Next: python molvae/finetune_dft.py --target homo,lumo,gap,dipole "
+    print("Next: python -m batterygen.grounding.finetune_dft --target homo,lumo,gap,dipole "
           f"--labels {args.out}")
 
 

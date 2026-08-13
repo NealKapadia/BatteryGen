@@ -2,11 +2,11 @@
 
 For each molecule: RDKit 3D-embed (ETKDG) -> MMFF clean-up -> xyz -> run xtb.exe,
 then parse HOMO / LUMO / HOMO-LUMO gap (eV), dipole (Debye) and total energy (Eh).
-Results are appended (de-duplicated) to molvae_artifacts/dft/labels.csv.
+Results are appended (de-duplicated) to batterygen_artifacts/dft/labels.csv.
 
-  python molvae/xtb_label.py --n 300 --source dataset
-  python molvae/xtb_label.py --input my_smiles.txt          # one SMILES per line / csv
-  python molvae/xtb_label.py --n 500 --opt                  # geometry-optimize first
+  python -m batterygen.grounding.xtb_label --n 300 --source dataset
+  python -m batterygen.grounding.xtb_label --input my_smiles.txt          # one SMILES per line / csv
+  python -m batterygen.grounding.xtb_label --n 500 --opt                  # geometry-optimize first
 """
 from __future__ import annotations
 
@@ -22,9 +22,9 @@ from typing import Dict, List, Optional
 
 from tqdm import tqdm
 
-from molforge.core import config
+from batterygen.core import config
 
-from molforge.core import data
+from batterygen.core import data
 
 
 _RE_GAP = re.compile(r"HOMO-LUMO gap\s+(-?\d+\.\d+)", re.IGNORECASE)

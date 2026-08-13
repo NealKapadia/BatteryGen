@@ -10,7 +10,7 @@ This writes:
   * a labels CSV (SMILES + energy) for grounding via finetune_dft.py, when energies
     are available.
 
-  python molvae/openqdc_data.py --dataset GEOM --max 200000
+  python -m batterygen.grounding.openqdc_data --dataset GEOM --max 200000
 """
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ import argparse
 import csv
 from pathlib import Path
 
-from molforge.core import config
+from batterygen.core import config
 
 
 

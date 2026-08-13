@@ -17,7 +17,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence
 
-from molforge.core import config
+from batterygen.core import config
 
 
 

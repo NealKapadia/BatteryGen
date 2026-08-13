@@ -3,12 +3,12 @@
 * Runs on CUDA (your RTX 3060) with mixed precision.
 * tqdm progress bar shows molecules-seen, recon / KL / property loss, lr, beta, VRAM.
 * Checkpoints every CHECKPOINT_EVERY molecules (default 500,000) to
-  molvae_artifacts/checkpoints/, plus latest.pt for resuming.
+  batterygen_artifacts/checkpoints/, plus latest.pt for resuming.
 
 Usage:
-    python molvae/train.py --epochs 3
-    python molvae/train.py --resume
-    python molvae/train.py --max-mols 100000 --ckpt-every 20000   # quick run
+    python -m batterygen.generative.train --epochs 3
+    python -m batterygen.generative.train --resume
+    python -m batterygen.generative.train --max-mols 100000 --ckpt-every 20000   # quick run
 """
 from __future__ import annotations
 
@@ -23,11 +23,11 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from molforge.core import config
+from batterygen.core import config
 
-from molforge.core import data
+from batterygen.core import data
 
-from molforge.core import model as M
+from batterygen.core import model as M
 
 
 

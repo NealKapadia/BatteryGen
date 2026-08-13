@@ -2,7 +2,7 @@
 predictive/features.py  (pipeline step 1)
 =========================================
 Builds the feature cache the predictive model trains on, from your dataset CSV
-(located via config.resolve_ce_csv: --csv, $MOLVAE_CE_CSV, or a single file in data/).
+(located via config.resolve_ce_csv: --csv, $BATTERYGEN_CE_CSV, or a single file in data/).
 The schema is read entirely from ``TARGET`` (predictive/target.py) - no column name is
 hardcoded here, so the same code serves any chemistry / any measured target.
 
@@ -20,7 +20,7 @@ xTB (GFN2 single-point) gives HOMO/LUMO/gap/dipole per UNIQUE molecule; chi/eta/
 derived. Results are cached to predictive/xtb_cache.csv so re-runs are instant. Charged
 fragments are run at their RDKit formal charge.
 
-Run:  python -m molforge.predictive.features [--no-xtb]
+Run:  python -m batterygen.predictive.features [--no-xtb]
 Output: <artifacts>/predictive/feature_cache.pkl
 """
 from __future__ import annotations
@@ -35,10 +35,10 @@ import numpy as np
 import pandas as pd
 import joblib
 
-from molforge.core import config
-from molforge.core import data
-from molforge.predictive.target import TARGET
-from molforge.predictive import paths
+from batterygen.core import config
+from batterygen.core import data
+from batterygen.predictive.target import TARGET
+from batterygen.predictive import paths
 
 RDKIT_COLS = ["MolLogP", "TPSA", "HDonor", "HAccept", "RotB", "FracCSP3", "MolWt",
               "NHOH", "NOCount", "BertzCT", "MolMR", "MaxAbsQ", "MinQ", "ArRings",
@@ -111,7 +111,7 @@ def load_xtb_cache() -> dict:
 def compute_xtb(smiles_list, cache: dict):
     """Fill xTB HOMO/LUMO/gap/dipole for any uncached molecule; persist incrementally."""
     from rdkit import Chem
-    from molforge.grounding import xtb_label
+    from batterygen.grounding import xtb_label
 
     todo = [s for s in smiles_list if s not in cache]
     if not todo:
@@ -190,7 +190,7 @@ def main():
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--csv", default=None,
-                    help="dataset CSV (default: auto-detect a single CSV in data/, or $MOLVAE_CE_CSV)")
+                    help="dataset CSV (default: auto-detect a single CSV in data/, or $BATTERYGEN_CE_CSV)")
     ap.add_argument("--no-xtb", dest="xtb", action="store_false", default=TARGET.use_xtb,
                     help="skip xTB (xtb cols dropped from the feature set)")
     ap.add_argument("--xtb", dest="xtb", action="store_true", help="force xTB on")

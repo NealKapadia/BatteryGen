@@ -1,8 +1,8 @@
 Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
 
-Copyright (c) 2026 Neal Kapadia (MolForge)
+Copyright (c) 2026 Neal Kapadia (BatteryGen)
 
-This work — including the MolForge source code and the trained model weights —
+This work — including the BatteryGen source code and the trained model weights —
 is licensed under the Creative Commons Attribution-NonCommercial 4.0
 International License (CC BY-NC 4.0).
 
@@ -17,7 +17,7 @@ You are free to:
 
 Under the following terms:
 
-  - Attribution — You must give appropriate credit (including to MolForge and to
+  - Attribution — You must give appropriate credit (including to BatteryGen and to
     Molport as the source of the training data), provide a link to the license,
     and indicate if changes were made. You may do so in any reasonable manner,
     but not in any way that suggests the licensor endorses you or your use.

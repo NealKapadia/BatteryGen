@@ -22,7 +22,7 @@ import struct
 from pathlib import Path
 from typing import Iterable, Optional
 
-from molforge.core import config
+from batterygen.core import config
 
 
 _BLOOM_MAGIC = b"MVBLOOM1"
@@ -79,7 +79,7 @@ class BloomFilter:
     def load(cls, path: Path) -> "BloomFilter":
         with open(path, "rb") as f:
             if f.read(len(_BLOOM_MAGIC)) != _BLOOM_MAGIC:
-                raise ValueError(f"{path} is not a molvae Bloom file")
+                raise ValueError(f"{path} is not a batterygen Bloom file")
             m_bits, k, n_added = struct.unpack("<QIQ", f.read(20))
             bits = bytearray(f.read())
         obj = cls.__new__(cls)
@@ -122,7 +122,7 @@ class MolportIndex:
     def _canon(self, raw_or_canon: str, already_canonical: bool) -> Optional[str]:
         if already_canonical:
             return raw_or_canon
-        from molforge.core.data import canonical_smiles  # lazy: avoids importing rdkit unless needed
+        from batterygen.core.data import canonical_smiles  # lazy: avoids importing rdkit unless needed
 
         return canonical_smiles(raw_or_canon)
 

@@ -11,9 +11,9 @@ cation, or an objective - every stage reads its settings from here:
     design    -> maximize vs. minimize, and the natural-language framing of the search
     llm / rag -> the system / objective / cation strings injected into every prompt
 
-Switch chemistry with one line (or the ``MOLFORGE_TARGET`` env var):
+Switch chemistry with one line (or the ``BATTERYGEN_TARGET`` env var):
 
-    TARGET = PRESETS["Li"]          # or set MOLFORGE_TARGET=Li in the environment
+    TARGET = PRESETS["Li"]          # or set BATTERYGEN_TARGET=Li in the environment
 
 When you bring your own dataset, edit the *_col fields to match your CSV headers.
 """
@@ -102,5 +102,5 @@ PRESETS = {
     ),
 }
 
-# The active configuration. Change "Zn" here, or set MOLFORGE_TARGET=Li/Na/K.
-TARGET: TargetConfig = PRESETS[os.getenv("MOLFORGE_TARGET", "Zn")]
+# The active configuration. Change "Zn" here, or set BATTERYGEN_TARGET=Li/Na/K.
+TARGET: TargetConfig = PRESETS[os.getenv("BATTERYGEN_TARGET", "Zn")]

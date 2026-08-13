@@ -9,8 +9,8 @@ Two modes:
 
 Spec values may be a single number (matched within --tol) or a [low, high] range.
 
-  python molvae/search.py --mode dataset --spec "{\"MolWt\":[300,350],\"QED\":[0.85,1.0]}"
-  python molvae/search.py --mode latent  --spec "{\"MolWt\":320,\"QED\":0.9,\"TPSA\":60}" --n 10
+  python -m batterygen.generative.search --mode dataset --spec "{\"MolWt\":[300,350],\"QED\":[0.85,1.0]}"
+  python -m batterygen.generative.search --mode latent  --spec "{\"MolWt\":320,\"QED\":0.9,\"TPSA\":60}" --n 10
 """
 from __future__ import annotations
 
@@ -21,13 +21,13 @@ from typing import Dict, List, Tuple
 import numpy as np
 import torch
 
-from molforge.core import config
+from batterygen.core import config
 
-from molforge.core import data
+from batterygen.core import data
 
-from molforge.core import infer
+from batterygen.core import infer
 
-from molforge.core.membership import MolportIndex
+from batterygen.core.membership import MolportIndex
 
 
 def _bounds(spec: Dict, tol: float) -> Dict[str, Tuple[float, float]]:

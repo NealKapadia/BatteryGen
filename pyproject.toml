@@ -3,13 +3,13 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "molforge"
+name = "batterygen"
 version = "0.2.0"
 description = "Pretrained conditional SELFIES-VAE for de-novo molecule & battery-electrolyte design"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "CC-BY-NC-4.0" }
-authors = [{ name = "MolForge" }]
+authors = [{ name = "BatteryGen" }]
 keywords = ["cheminformatics", "vae", "selfies", "molecule-generation", "electrolyte", "rdkit"]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -46,46 +46,46 @@ full = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/NealKapadia/molforge"
+Homepage = "https://github.com/NealKapadia/BatteryGen"
 
 # Short console commands. Each maps to a module's main() so users never type long paths.
 [project.scripts]
-molforge = "molforge.core.api:_main"                       # generate from the CLI
-molforge-finetune = "molforge.core.finetune:main"          # fine-tune on your SMILES
-molforge-preprocess = "molforge.generative.preprocess:main"
-molforge-train = "molforge.generative.train:main"          # train the generative model
-molforge-add-data = "molforge.generative.add_data:main"
-molforge-make-split = "molforge.generative.make_split:main"
-molforge-generate = "molforge.generative.generate:main"
-molforge-search = "molforge.generative.search:main"
-molforge-evaluate = "molforge.generative.evaluate:main"
-molforge-report = "molforge.generative.report:main"
-molforge-pipeline = "molforge.generative.pipeline:main"
-molforge-pred-features = "molforge.predictive.features:main"  # 1. featurize the dataset
-molforge-pred-select = "molforge.predictive.select:main"      # 2. shortlist features (RFE-CV)
-molforge-pred-tune = "molforge.predictive.tune:main"          # 3. Optuna hyperparameter tuning
-molforge-pred-train = "molforge.predictive.train:main"        # 4. train the predictive model
-molforge-pred-design = "molforge.predictive.design:main"      # 5. full inverse-design pipeline
-molforge-pred-rag = "molforge.predictive.rag:main"            # manage the literature knowledge base
-molforge-electrolyte = "molforge.electrolyte.electrolyte:main"
-molforge-xtb-label = "molforge.grounding.xtb_label:main"
-molforge-qm9 = "molforge.grounding.qm9:main"
-molforge-finetune-dft = "molforge.grounding.finetune_dft:main"
+batterygen = "batterygen.core.api:_main"                       # generate from the CLI
+batterygen-finetune = "batterygen.core.finetune:main"          # fine-tune on your SMILES
+batterygen-preprocess = "batterygen.generative.preprocess:main"
+batterygen-train = "batterygen.generative.train:main"          # train the generative model
+batterygen-add-data = "batterygen.generative.add_data:main"
+batterygen-make-split = "batterygen.generative.make_split:main"
+batterygen-generate = "batterygen.generative.generate:main"
+batterygen-search = "batterygen.generative.search:main"
+batterygen-evaluate = "batterygen.generative.evaluate:main"
+batterygen-report = "batterygen.generative.report:main"
+batterygen-pipeline = "batterygen.generative.pipeline:main"
+batterygen-pred-features = "batterygen.predictive.features:main"  # 1. featurize the dataset
+batterygen-pred-select = "batterygen.predictive.select:main"      # 2. shortlist features (RFE-CV)
+batterygen-pred-tune = "batterygen.predictive.tune:main"          # 3. Optuna hyperparameter tuning
+batterygen-pred-train = "batterygen.predictive.train:main"        # 4. train the predictive model
+batterygen-pred-design = "batterygen.predictive.design:main"      # 5. full inverse-design pipeline
+batterygen-pred-rag = "batterygen.predictive.rag:main"            # manage the literature knowledge base
+batterygen-electrolyte = "batterygen.electrolyte.electrolyte:main"
+batterygen-xtb-label = "batterygen.grounding.xtb_label:main"
+batterygen-qm9 = "batterygen.grounding.qm9:main"
+batterygen-finetune-dft = "batterygen.grounding.finetune_dft:main"
 
-# Map the importable package name `molforge` onto this directory; the purpose folders
-# (core, generative, ...) are shipped as `molforge.<folder>` subpackages.
+# Map the importable package name `batterygen` onto this directory; the purpose folders
+# (core, generative, ...) are shipped as `batterygen.<folder>` subpackages.
 [tool.setuptools]
 packages = [
-    "molforge",
-    "molforge.core",
-    "molforge.generative",
-    "molforge.predictive",
-    "molforge.electrolyte",
-    "molforge.grounding",
+    "batterygen",
+    "batterygen.core",
+    "batterygen.generative",
+    "batterygen.predictive",
+    "batterygen.electrolyte",
+    "batterygen.grounding",
 ]
 
 [tool.setuptools.package-dir]
-molforge = "."
+batterygen = "."
 
 # Don't sweep the model weights, raw data, datasets, or local caches into the wheel.
 [tool.setuptools.exclude-package-data]
